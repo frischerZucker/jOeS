@@ -30,3 +30,7 @@ iso:
 
 	# Install Limine stage 1 and 2 for legacy BIOS boot.
 	./limine/limine bios-install image.iso
+
+.PHONY: run
+run:
+	qemu-system-x86_64 -cdrom image.iso
