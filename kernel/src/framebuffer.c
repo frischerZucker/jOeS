@@ -8,7 +8,16 @@
 #define COLOR_WHITE 0xffffff
 
 /*
-    Fills the framebuffer with the given color.
+    Fills the framebuffer with a solid color.
+
+    Fills the entire framebuffer with the given color.
+
+    args:
+        struct limine_framebuffer *framebuffer -> framebuffer to fill
+        uint32_t color -> color to fill it with
+    
+    returns
+        0 if success
 */
 uint8_t framebuffer_clear(struct limine_framebuffer *framebuffer, uint32_t color)
 {
@@ -48,6 +57,7 @@ uint8_t framebuffer_draw_char(struct limine_framebuffer *framebuffer, char c, ui
     {
         for (uint16_t x = 0; x < CHAR_WIDTH*2; x++)
         {
+            // if the current pixels bit in the bitmap equals '1', a pixel is drawn on the framebuffer
             if (CHARSET(c)[(x / 2) + (y / 2)*CHAR_WIDTH] == 1)
             {
                 fb_ptr[(start_y + y) * (framebuffer->pitch / (framebuffer->bpp / 8)) + start_x + x] = color;
