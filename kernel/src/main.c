@@ -3,6 +3,8 @@
 #include <stdbool.h>
 #include <limine.h>
 
+#include <framebuffer.h>
+
 // set limine base revision to 3
 __attribute__((used, section(".limine_requests"))) static volatile LIMINE_BASE_REVISION(3);
 
@@ -104,7 +106,7 @@ void kmain(void)
     {
         hcf();
     }
-    
+
     // Ensure we got a framebuffer.
     if (framebuffer_request.response == NULL || framebuffer_request.response->framebuffer_count < 1)
     {
@@ -114,13 +116,7 @@ void kmain(void)
     // Fetch a framebuffer.
     struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
 
-    // Draw a line on the framebuffer
-    for (size_t i = 0; i < 100; i++)
-    {
-        volatile uint32_t *fb_ptr = framebuffer->address;
+    framebuffer_clear(framebuffer, 0x000000);
 
-        fb_ptr[i * (framebuffer->pitch / 4) + i] = 0xffffff;
-    }
-    
     hcf();
 }
