@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <limine.h>
 
+#include <charset.h>
 #include <framebuffer.h>
 
 // set limine base revision to 3
@@ -117,6 +118,18 @@ void kmain(void)
     struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
 
     framebuffer_clear(framebuffer, 0x000000);
+
+    framebuffer_draw_char(framebuffer, 'A', 100, 100, 0xffffff);
+    framebuffer_draw_char(framebuffer, '$', 111, 100, 0xffffff);
+    framebuffer_draw_char(framebuffer, 'a', 122, 100, 0xffffff);
+    framebuffer_draw_char(framebuffer, 'm', 133, 100, 0xffffff);
+    framebuffer_draw_char(framebuffer, 'M', 144, 100, 0xffffff);
+    framebuffer_draw_char(framebuffer, 'K', 155, 100, 0xffffff);
+    framebuffer_draw_char(framebuffer, '\\', 166, 100, 0xffffff);
+    framebuffer_draw_char(framebuffer, ')', 177, 100, 0xffffff);
+    framebuffer_draw_char(framebuffer, '.', 188, 100, 0xffffff);
+    framebuffer_draw_char(framebuffer, '*', 199, 100, 0xffffff);
+    framebuffer_draw_char(framebuffer, '#', 210, 100, 0xffffff);
 
     hcf();
 }
