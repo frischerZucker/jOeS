@@ -5,3 +5,6 @@ limine/
 
 kernel/bin/
 kernel/obj/
+
+.venv/
+.vscode/
