@@ -1,6 +1,6 @@
 # jOeS
 
-**jOeS** is a hobby project to create a meme operating system for `x86_64` using C and the [Limine Bootloader](https://github.com/limine-bootloader/limine).
+**jOeS** is a hobby project to create an operating system for `x86_64` using C and the [Limine Bootloader](https://github.com/limine-bootloader/limine).
 
 ```
           
@@ -31,7 +31,6 @@ My current goal is to implement a basic terminal that outputs text to the screen
 |         ├── src/             # source code of the kernel
 |         └── GNUmakefile      # makefile for building the kernel
 ├── tools/                     # additional tools for development
-├── build.sh                   # script to easily build and run jOeS
 ├── GNUmakefile                # makefile for .iso-creation and running
 └── README.md                  # you are here lol
 ```
@@ -58,7 +57,7 @@ make run
 ```
 Or simply run the provided script:
 ``` bash
-./build-run.sh
+./tools/build.sh
 ```
 
 ## Contributing
