@@ -15,7 +15,7 @@
     args:
         struct limine_framebuffer *framebuffer -> framebuffer to fill
         uint32_t color -> color to fill it with
-    
+
     returns
         0 if success
 */
@@ -45,7 +45,7 @@ uint8_t framebuffer_clear(struct limine_framebuffer *framebuffer, uint32_t color
         uint16_t start_x -> x coordinate of the upper left corner of where c should be printed
         uint16_t start_y -> y coordinate of the upper left corner of where c should be printed
         uint32_t color -> color of the character
-    
+
     returns:
         0 if success
 */
@@ -53,15 +53,15 @@ uint8_t framebuffer_draw_char(struct limine_framebuffer *framebuffer, char c, ui
 {
     uint32_t *fb_ptr = framebuffer->address;
 
-    for (uint16_t y = 0; y < CHAR_HEIGHT*2; y++)
+    for (uint16_t y = 0; y < CHAR_HEIGHT * 2; y++)
     {
-        for (uint16_t x = 0; x < CHAR_WIDTH*2; x++)
+        for (uint16_t x = 0; x < CHAR_WIDTH * 2; x++)
         {
             // if the current pixels bit in the bitmap equals '1', a pixel is drawn on the framebuffer
-            if (CHARSET(c)[(x / 2) + (y / 2)*CHAR_WIDTH] == 1)
+            if (CHARSET(c)[(x / 2) + (y / 2) * CHAR_WIDTH] == 1)
             {
                 fb_ptr[(start_y + y) * (framebuffer->pitch / (framebuffer->bpp / 8)) + start_x + x] = color;
-            }            
+            }
         }
     }
 
