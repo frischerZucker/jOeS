@@ -118,30 +118,9 @@ void kmain(void)
 
     terminal_init(framebuffer, 12, 18);
 
-    terminal_put_char('J');
-    terminal_put_char('o');
-    terminal_put_char('e');
-    terminal_put_char(' ');
-    terminal_put_char('B');
-    terminal_put_char('i');
-    terminal_put_char('d');
-    terminal_put_char('e');
-    terminal_put_char('n');
-    terminal_put_char('\n');
+    terminal_write_string("Joe Biden\n", 10);
     terminal_set_color(0xaa0000);
-    terminal_put_char('\t');
-    terminal_put_char('O');
-    terminal_put_char('b');
-    terminal_put_char('a');
-    terminal_put_char('m');
-    terminal_put_char('n');
-    terminal_put_char('a');
-    terminal_put_char('p');
-    terminal_put_char('r');
-    terminal_put_char('i');
-    terminal_put_char('s');
-    terminal_put_char('m');
-    terminal_put_char('\n');
+    terminal_write_string("\tObamnaprism\n", 13);
     terminal_set_color(0x00aa00);
     terminal_put_char('o');
     terminal_put_char('\t');
