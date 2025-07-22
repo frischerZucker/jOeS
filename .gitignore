@@ -8,3 +8,5 @@ kernel/obj/
 
 .venv/
 .vscode/
+
+sysroot/
