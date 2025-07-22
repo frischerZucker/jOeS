@@ -2,6 +2,8 @@
 MAKEFLAGS += -rR
 .SUFFIXES:
 
+SYSROOT := ../sysroot
+
 # This is the name that our final executable will have.
 # Change as needed.
 override OUTPUT := test-kernel
@@ -32,7 +34,7 @@ ifeq ($(TOOLCHAIN),llvm)
 endif
 
 # User controllable C flags.
-CFLAGS := -g -O2 -pipe
+CFLAGS := -g -O2 -pipe -Iinclude -isystem $(SYSROOT)/usr/include
 
 # User controllable C preprocessor flags. We set none by default.
 CPPFLAGS :=
@@ -40,8 +42,8 @@ CPPFLAGS :=
 # User controllable nasm flags.
 NASMFLAGS := -F dwarf -g
 
-# User controllable linker flags. We set none by default.
-LDFLAGS :=
+# User controllable linker flags. Link against libk
+LDFLAGS := -L$(SYSROOT)/usr/lib -lk
 
 # Check if CC is Clang.
 override CC_IS_CLANG := $(shell ! $(CC) --version 2>/dev/null | grep -q '^Target: '; echo $$?)
