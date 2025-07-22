@@ -6,7 +6,8 @@
 
 #include <limine.h>
 
-struct terminal {
+struct terminal
+{
     uint8_t cursor_x;
     uint8_t cursor_y;
 

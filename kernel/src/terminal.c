@@ -10,7 +10,6 @@ static struct terminal terminal;
 
     Sets the cursor position to the top-left corner, stores the character size and the framebuffer for drawing characters.
 
-    
     @param framebuffer Pointer to the framebuffer to render text to.
     @param char_w Width of each character in pixels.
     @param char_h Height of each character in pixels.
@@ -32,7 +31,7 @@ void terminal_init(struct limine_framebuffer *framebuffer, uint8_t char_w, uint8
     Sets the foreground color used to render text.
 
     @param color 24-bit RGB color value.
-    @return Always return 0.
+    @returns Always returns 0.
 */
 uint8_t terminal_set_color(uint32_t color)
 {
@@ -54,7 +53,7 @@ uint8_t terminal_set_color(uint32_t color)
     Automatically moves to the next line if the cursor exceeds the screen width.
 
     @param c ASCII character to draw.
-    @return 0 on success, -1 if character is not printable.
+    @returns 0 on success, -1 if character is not printable.
 */
 uint8_t terminal_put_char(uint8_t c)
 {
@@ -63,12 +62,12 @@ uint8_t terminal_put_char(uint8_t c)
     case ' ': // space -> move the cursor right and draw nothing
         terminal.cursor_x = terminal.cursor_x + 1;
         break;
-    
+
     case '\n': // line break -> move the cursor to the beginning of the next line
         terminal.cursor_x = 0;
         terminal.cursor_y = terminal.cursor_y + 1;
         break;
-    
+
     case '\t': // tab -> move the cursore right until it reaches a multiple of the defined tab width, draw nothing
         do
         {
@@ -82,14 +81,14 @@ uint8_t terminal_put_char(uint8_t c)
         {
             return -1;
         }
-        
-        framebuffer_draw_char(terminal.framebuffer, c, terminal.cursor_x*terminal.char_w, terminal.cursor_y*terminal.char_h, terminal.fg_color);
+
+        framebuffer_draw_char(terminal.framebuffer, c, terminal.cursor_x * terminal.char_w, terminal.cursor_y * terminal.char_h, terminal.fg_color);
         terminal.cursor_x = terminal.cursor_x + 1;
         break;
     }
 
     // goes to the beginning of the next line if the cursor moved out of the screen
-    if ((terminal.cursor_x + 1)*terminal.char_w > terminal.framebuffer->width)
+    if ((terminal.cursor_x + 1) * terminal.char_w > terminal.framebuffer->width)
     {
         terminal.cursor_x = 0;
         terminal.cursor_y = terminal.cursor_y + 1;
@@ -110,7 +109,7 @@ uint8_t terminal_put_char(uint8_t c)
 uint8_t terminal_write_string(char *str, size_t len)
 {
     for (size_t i = 0; i < len; i++)
-    {    
+    {
         terminal_put_char(str[i]);
     }
 
