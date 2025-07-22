@@ -27,12 +27,17 @@ My current goal is to implement a basic terminal that outputs text to the screen
 ```
 /
 ├── kernel/                    
-|         ├── linker_scripts/  # linker scripts used for the kernel
-|         ├── src/             # source code of the kernel
-|         └── GNUmakefile      # makefile for building the kernel
-├── tools/                     # additional tools for development
-├── limine.conf                # limine config file
-└── README.md                  # you are here lol
+|         ├── include/        # kernel headers
+|         ├── linker_scripts/ # kernel linker scripts
+|         ├── src/            # kernel source files
+|         └── GNUmakefile     # kernel makefile
+├── libc/                    
+|       ├── include/          # libc headers
+|       ├── string/           # string.h source files
+|       └── GNUmakefile       # libc makefile
+├── tools/                    # additional tools for development
+├── limine.conf               # limine config file
+└── README.md                 # you are here lol
 ```
 
 ## Requirements
@@ -48,15 +53,22 @@ For some of the additional tools you also need:
 
 ## Building and Running
 
-Run the following scripts:
+To build libc run the following scripts:
 ``` bash
-./tools/build.sh
-./tools/iso.sh
-./tools/run.sh
+./headers.sh
+./build-libc.sh
 ```
-Or simply use the combined script:
+
+To build the kernel, create an iso and run it use:
 ``` bash
-./tools/build-run.sh
+./build-kernel.sh
+./iso.sh
+./run.sh
+```
+
+Or simply use the combined script to do everything at once:
+``` bash
+./tools/build-run-all.sh
 ```
 
 ## Contributing
