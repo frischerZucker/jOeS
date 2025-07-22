@@ -5,6 +5,7 @@
 
 #include "libc/include/string.h"
 
+#include "gdt.h"
 #include "terminal.h"
 
 // set limine base revision to 3
@@ -50,25 +51,20 @@ void kmain(void)
 
     terminal_init(framebuffer, 12, 18);
 
-    terminal_write_string("Joe Biden\n", strlen("Joe Biden\n"));
+    terminal_write_string("Joe Biden\nD\nD\nD\n", strlen("Joe Biden\n"));
     terminal_set_color(0xaa0000);
-    terminal_write_string("\tObamnaprism\n", strlen("\tObamnaprism\n"));
-    terminal_set_color(0x00aa00);
     terminal_put_char('o');
     terminal_put_char('\t');
     terminal_set_color(0xaa00aa);
     terminal_put_char('o');
     terminal_put_char('\n');
+    terminal_set_color(0xffffff);
 
-    // Test if the automatic line break when reaching the right end of the screen works.
-    uint8_t c = 33;
-    for (size_t i = 0; i < 200; i++)
-    {
-        terminal_put_char(c);
-        c = c + 1;
-        if (c > 126)
-            c = 33;
-    }
+    gdt_init();
+    gdt_install(gdt);
+    // I think if this line is reached the gdt was loaded correctly????
+    // I have do look up for some checks to better check it. At least it didn't crash if you can see this lol
+    terminal_write_string("> GDT loaded successfully.\n", strlen("> GDT loaded successfully.\n"));
 
     hcf();
 }
