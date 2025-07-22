@@ -31,15 +31,16 @@ My current goal is to implement a basic terminal that outputs text to the screen
 |         ├── src/             # source code of the kernel
 |         └── GNUmakefile      # makefile for building the kernel
 ├── tools/                     # additional tools for development
-├── GNUmakefile                # makefile for .iso-creation and running
+├── limine.conf                # limine config file
 └── README.md                  # you are here lol
 ```
 
 ## Requirements
 
 To build and run **jOeS** you need:
-- a cross-compiled `x86_64-elf-gcc` toolchain as described [here](https://wiki.osdev.org/GCC_Cross-Compiler)
+- a `x86_64-elf-gcc` cross compiler toolchain as described [here](https://wiki.osdev.org/GCC_Cross-Compiler)
 - GNU `make`
+- NASM
 - QEMU
 
 For some of the additional tools you also need:
@@ -47,17 +48,15 @@ For some of the additional tools you also need:
 
 ## Building and Running
 
-Run the following commands from the project root directory:
-``` bash
-cd kernel
-make
-cd ..
-make iso
-make run
-```
-Or simply run the provided script:
+Run the following scripts:
 ``` bash
 ./tools/build.sh
+./tools/iso.sh
+./tools/run.sh
+```
+Or simply use the combined script:
+``` bash
+./tools/build-run.sh
 ```
 
 ## Contributing
