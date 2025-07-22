@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <limine.h>
 
-#include "libc/include/string.h"
+#include "string.h"
 
 #include "gdt.h"
 #include "terminal.h"
@@ -51,7 +51,7 @@ void kmain(void)
 
     terminal_init(framebuffer, 12, 18);
 
-    terminal_write_string("Joe Biden\nD\nD\nD\n", strlen("Joe Biden\n"));
+    terminal_write_string("Joe Biden\n", strlen("Joe Biden2\n"));
     terminal_set_color(0xaa0000);
     terminal_put_char('o');
     terminal_put_char('\t');
