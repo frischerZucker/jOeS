@@ -1,10 +1,13 @@
+#include <limits.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
 #include <limine.h>
 
+#include "stdio.h"
 #include "string.h"
 
+#include "charset.h"
 #include "gdt.h"
 #include "terminal.h"
 
@@ -49,7 +52,7 @@ void kmain(void)
     // Fetch a framebuffer.
     struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
 
-    terminal_init(framebuffer, 12, 18);
+    terminal_init(framebuffer, CHAR_WIDTH * 1.3, CHAR_HEIGHT * 2.1);
 
     terminal_write_string("Joe Biden\n", strlen("Joe Biden2\n"));
     terminal_set_color(0xaa0000);

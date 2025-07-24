@@ -88,7 +88,7 @@ uint8_t terminal_put_char(uint8_t c)
     }
 
     // goes to the beginning of the next line if the cursor moved out of the screen
-    if ((terminal.cursor_x + 1) * terminal.char_w > terminal.framebuffer->width)
+    if ((uint64_t)((terminal.cursor_x + 1) * terminal.char_w) > terminal.framebuffer->width)
     {
         terminal.cursor_x = 0;
         terminal.cursor_y = terminal.cursor_y + 1;
