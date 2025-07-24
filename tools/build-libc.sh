@@ -13,14 +13,25 @@ cd $PROJECT_ROOT_DIR
 
 # Call libc's GNUmakefile to build it.
 cd libc
-make TOOLCHAIN_PREFIX=x86_64-elf-
-if [ $? != 0 ]; then
-    echo "ERROR: Building the kernel failed!"
+
+# Check if libc needs to be rebuild.
+make -q TOOLCHAIN_PREFIX=x86_64-elf-
+
+if [ $? == 0 ]; then
+    echo libc is already up to date.
     exit 1
+else
+
+    make TOOLCHAIN_PREFIX=x86_64-elf-
+
+    if [ $? != 0 ]; then
+        echo "ERROR: Building libc failed!"
+        exit -1
+    fi
+
+    # Copies libc.a into the sysroot.
+    mkdir --parent --verbose $PROJECT_ROOT_DIR/sysroot/usr/lib
+    cp *.a $PROJECT_ROOT_DIR/sysroot/usr/lib/
+
+    exit 0
 fi
-
-# Copies libc.a into the sysroot.
-mkdir --parent --verbose $PROJECT_ROOT_DIR/sysroot/usr/lib
-cp *.a $PROJECT_ROOT_DIR/sysroot/usr/lib/
-
-make clean
