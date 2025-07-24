@@ -10,4 +10,8 @@ int memcmp(const void *s1, const void *s2, size_t n);
 
 size_t strlen(const char *str);
 
+// Non-standard functions
+void strrev(char * str);
+void itoa(int number, char *str, int base);
+
 #endif // STRING_H
