@@ -6,6 +6,10 @@ limine/
 kernel/bin/
 kernel/obj/
 
+*.o
+*.d
+*.a
+
 .venv/
 .vscode/
 
