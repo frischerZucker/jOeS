@@ -9,7 +9,7 @@ cd $SCRIPT_LOCATION
 
 export COPY_HEADERS="n"
 read -a COPY_HEADERS -p "Copy headers to sysroot? (y/n)"
-if [ $COPY_HEADERS == y ]; then
+if [ "$COPY_HEADERS" == "y" ]; then
     ./headers.sh
 fi
 
