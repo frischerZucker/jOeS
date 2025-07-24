@@ -18,3 +18,5 @@ if [ $? != 0 ]; then
     echo "ERROR: Building the kernel failed!"
     exit 1
 fi
+
+exit 0

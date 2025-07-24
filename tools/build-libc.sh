@@ -19,14 +19,14 @@ make -q TOOLCHAIN_PREFIX=x86_64-elf-
 
 if [ $? == 0 ]; then
     echo libc is already up to date.
-    exit 1
+    exit 2
 else
 
     make TOOLCHAIN_PREFIX=x86_64-elf-
 
     if [ $? != 0 ]; then
         echo "ERROR: Building libc failed!"
-        exit -1
+        exit 1
     fi
 
     # Copies libc.a into the sysroot.

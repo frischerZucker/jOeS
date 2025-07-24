@@ -14,14 +14,22 @@ if [ "$COPY_HEADERS" == "y" ]; then
 fi
 
 ./build-libc.sh
-
-if [ $? == 0 ]; then
+export RET_VAL=$?
+if [ $RET_VAL == 0 ]; then
     echo libc was rebuilt, cleaning kernel so that it will be rebuild
     cd $SCRIPT_LOCATION/../kernel
     make clean
     cd $SCRIPT_LOCATION
+# Abort because building libc failed.
+elif [ $RET_VAL == 1 ]; then
+    exit 1
 fi
 
 ./build-kernel.sh
+# Abort because building the kernel failed.
+if [ $? != 0 ]; then
+    exit 1
+fi
+
 ./iso.sh
 ./run.sh
