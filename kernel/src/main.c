@@ -52,9 +52,9 @@ void kmain(void)
     // Fetch a framebuffer.
     struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
 
-    terminal_init(framebuffer, CHAR_WIDTH * 1.3, CHAR_HEIGHT * 2.1);
+    terminal_init(framebuffer, CHAR_WIDTH * 1.3, CHAR_HEIGHT * 2.2);
 
-    terminal_write_string("Joe Biden\n", strlen("Joe Biden2\n"));
+    terminal_write_string("Joe Biden\n", strlen("Joe Biden\n"));
     terminal_set_color(0xaa0000);
     terminal_put_char('o');
     terminal_put_char('\t');
@@ -68,6 +68,8 @@ void kmain(void)
     // I think if this line is reached the gdt was loaded correctly????
     // I have do look up for some checks to better check it. At least it didn't crash if you can see this lol
     terminal_write_string("> GDT loaded successfully.\n", strlen("> GDT loaded successfully.\n"));
+
+    printf("> Testing printf():\nchar: %c\nescaping the format character: %%\nstring:%s\nint > 0: %d\nint < 0:%d", 'a', "no service", 187420, -161);
 
     hcf();
 }
