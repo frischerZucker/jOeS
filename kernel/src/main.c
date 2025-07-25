@@ -9,6 +9,7 @@
 
 #include "charset.h"
 #include "gdt.h"
+#include "idt.h"
 #include "terminal.h"
 
 // set limine base revision to 3
@@ -68,6 +69,11 @@ void kmain(void)
     // I think if this line is reached the gdt was loaded correctly????
     // I have do look up for some checks to better check it. At least it didn't crash if you can see this lol
     terminal_write_string("> GDT loaded successfully.\n", strlen("> GDT loaded successfully.\n"));
+
+    idt_init();
+    idt_install(idt);
+    // It's the same as with the GDT.. I think if this code is printed, the IDT was loaded correctly.
+    terminal_write_string("> IDT loaded successfully.\n", strlen("> IDT loaded successfully.\n"));
 
     printf("> Testing printf():\nchar: %c\nescaping the format character: %%\nstring:%s\nint > 0: %d\nint < 0:%d", 'a', "no service", 187420, -161);
 
