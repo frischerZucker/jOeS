@@ -21,7 +21,7 @@
 
 ## Project Goals
 
-My current goal is to implement a basic terminal that outputs text to the screen using a framebuffer, acting as a minimal "Hello World" demonstration.
+~~My current goal is to implement a basic terminal that outputs text to the screen using a framebuffer, acting as a minimal "Hello World" demonstration.~~ I got a framebuffer up and running with a simple terminal and a (not quite finished) printf() function! My next goal is to get interrupts working. Let's see how that goes.. :D
 
 ## Project Structure
 ```
@@ -33,11 +33,12 @@ My current goal is to implement a basic terminal that outputs text to the screen
 |         └── GNUmakefile     # kernel makefile
 ├── libc/                    
 |       ├── include/          # libc headers
+|       ├── stdio/            # stdio.h source files
 |       ├── string/           # string.h source files
 |       └── GNUmakefile       # libc makefile
-├── tools/                    # additional tools for development
-├── limine.conf               # limine config file
-└── README.md                 # you are here lol
+├── tools/                    # build scripts & additional tools
+├── README.md                 # you are here lol
+└── limine.conf               # limine config file
 ```
 
 ## Requirements
