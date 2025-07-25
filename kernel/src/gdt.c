@@ -29,8 +29,6 @@ void gdt_create_segment_descriptor(struct gdt_descriptor *target, uint32_t base,
     target->access = access;
 
     target->limit_high_flags = target->limit_high_flags | ((flags & 0xF) << 4);
-
-    return 0;
 }
 
 /*
