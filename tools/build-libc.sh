@@ -31,7 +31,7 @@ else
 
     # Copies libc.a into the sysroot.
     mkdir --parent --verbose $PROJECT_ROOT_DIR/sysroot/usr/lib
-    cp *.a $PROJECT_ROOT_DIR/sysroot/usr/lib/
+    cp bin/*.a $PROJECT_ROOT_DIR/sysroot/usr/lib/
 
     exit 0
 fi

@@ -44,6 +44,9 @@ CPPFLAGS:=$(CPPFLAGS) $(ARCH_CPPFLAGS)
 LIBK_CFLAGS:=$(LIBK_CFLAGS) $(KERNEL_ARCH_CFLAGS) -m64 -mcmodel=kernel -fno-pic
 LIBK_CPPFLAGS:=$(LIBK_CPPFLAGS) $(KERNEL_ARCH_CPPFLAGS) -m64 -mcmodel=kernel -fno-pic
 
+BINDIR := bin
+OBJDIR := obj
+
 FREEOBJS=\
 $(ARCH_FREEOBJS) \
 string/memcmp.o \
@@ -62,50 +65,44 @@ OBJS=\
 $(FREEOBJS) \
 $(HOSTEDOBJS) \
 
-LIBK_OBJS=$(FREEOBJS:.o=.libk.o)
+LIBK_OBJS=$(addprefix $(OBJDIR)/, $(FREEOBJS:.o=.libk.o))
+OBJS := $(addprefix $(OBJDIR)/, $OBJS)
 
 #BINARIES=libc.a libk.a # Not ready for libc yet.
 BINARIES=libk.a
 
-.PHONY: all clean install install-headers install-libs
+# .PHONY: all clean install install-headers install-libs
+.PHONY: all
 .SUFFIXES: .o .libk.o .c .S
 
-all: $(BINARIES)
+all: bin/$(BINARIES)
 
-libc.a: $(OBJS)
+$(BINDIR)/libc.a: $(OBJS)
+	@mkdir --parents $(dir $@)
 	$(AR) rcs $@ $(OBJS)
 
-libk.a: $(LIBK_OBJS)
+$(BINDIR)/libk.a: $(LIBK_OBJS)
+	@mkdir --parents $(dir $@)
 	$(AR) rcs $@ $(LIBK_OBJS)
 
-.c.o:
+$(OBJDIR)/%.o: %.c
+	@mkdir --parents $(dir $@)
 	$(CC) -MD -c $< -o $@ -std=gnu11 $(CFLAGS) $(CPPFLAGS)
 
-.c.S:
-	$(CC) -MD -c $< -o $@ $(CFLAGS) $(CPPFLAGS)
-
-.c.libk.o:
+$(OBJDIR)/%.libk.o: %.c
+	@mkdir --parents $(dir $@)
 	$(CC) -MD -c $< -o $@ -std=gnu11 $(LIBK_CFLAGS) $(LIBK_CPPFLAGS)
 
-.S.libk.o:
+$(OBJDIR)/%.o: %.S
+	@mkdir --parents $(dir $@)
+	$(CC) -MD -c $< -o $@ $(CFLAGS) $(CPPFLAGS)
+
+$(OBJDIR)/%.libk.o: %.S
+	@mkdir --parents $(dir $@)
 	$(CC) -MD -c $< -o $@ $(LIBK_CFLAGS) $(LIBK_CPPFLAGS)
 
 clean:
-	rm -f $(BINARIES) *.a
-	rm -f $(OBJS) $(LIBK_OBJS) *.o */*.o */*/*.o
-	rm -f $(OBJS:.o=.d) $(LIBK_OBJS:.o=.d) *.d */*.d */*/*.d
-
-install: install-headers install-libs
-
-install-headers:
-	mkdir -p $(INCLUDEDIR)
-	cp -R --preserve=timestamps include/. $(INCLUDEDIR)/.
-
-install-libs: $(BINARIES)
-	mkdir -p $(LIBDIR)
-	cp $(BINARIES) $(LIBDIR)
+	rm -f $(OBJDIR) $(BINDIR)
 
 -include $(OBJS:.o=.d)
 -include $(LIBK_OBJS:.o=.d)
-
-
