@@ -75,7 +75,10 @@ void kmain(void)
     // It's the same as with the GDT.. I think if this code is printed, the IDT was loaded correctly.
     terminal_write_string("> IDT loaded successfully.\n", strlen("> IDT loaded successfully.\n"));
 
-    printf("> Testing printf():\nchar: %c\nescaping the format character: %%\nstring:%s\nint > 0: %d\nint < 0:%d", 'a', "no service", 187420, -161);
+    printf("> Testing printf():\nchar: %c\nescaping the format character: %%\nstring:%s\nint > 0: %d\nint < 0:%d\n", 'a', "no service", 187420, -161);
+
+    // This should fail and trigger a "Division by 0" exception.
+    printf("%d", 1/0);
 
     hcf();
 }

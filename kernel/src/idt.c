@@ -4,6 +4,8 @@
 
 struct idt_gate_descriptor idt[IDT_ENTRIES];
 
+extern void _isr0();
+
 /*
     Creates a Gate Descriptor with the given values.
 
@@ -26,7 +28,9 @@ void idt_create_entry(struct idt_gate_descriptor *target, uint64_t offset, uint1
 
     target->ist = ist & 0x7;
 
-    target->type_attributes = attributes;
+    // target->type_attributes = attributes;
+
+    target->type_attributes = 0b1110 | ((attributes & 0b11) << 5) |(1 << 7);
 
     target->reserved = 0;
 }
@@ -38,9 +42,14 @@ void idt_create_entry(struct idt_gate_descriptor *target, uint64_t offset, uint1
 */
 void idt_init(void)
 {
-    memset(idt, 0, (sizeof(struct idt_gate_descriptor) * IDT_ENTRIES) - 1);
+    memset(idt, 0, (sizeof(struct idt_gate_descriptor) * IDT_ENTRIES));
 
     // Add entries here.
+    for (size_t i = 0; i < IDT_ENTRIES; i++)
+    {
+        idt_create_entry(&idt[i], _isr0, 0x8, 0, IDT_ATTRIBUTES(0, IDT_GATE_TYPE_INT_GATE));
+    }
+    
 }
 
 /*
@@ -57,8 +66,9 @@ void idt_install(struct idt_gate_descriptor *target)
     idtr.offset = (uint64_t)target;
 
     asm(
-        "LIDT %0"
+        "lidt %0"
         :
         : "m"(idtr)
         : "memory");
+    asm("cli");
 }
