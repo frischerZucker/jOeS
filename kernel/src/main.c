@@ -36,6 +36,8 @@ static void hcf(void)
     }
 }
 
+extern void _test();
+
 void kmain(void)
 {
     // Ensure the bootloader supports the base revision.
@@ -77,8 +79,15 @@ void kmain(void)
 
     printf("> Testing printf():\nchar: %c\nescaping the format character: %%\nstring:%s\nint > 0: %d\nint < 0:%d\n", 'a', "no service", 187420, -161);
 
+    // This triggers a breakpoint interrupt.
+    // asm("int3");
     // This should fail and trigger a "Division by 0" exception.
-    printf("%d", 1/0);
+    // The volatile stuff is needed to force a division at runtime. 
+    // Otherwise the compiler generates an "un2" isntruction and I get an Invalid Opcode exception instead of a Divide Error.
+    // volatile int a = 1;
+    // volatile int b = 0;
+    // volatile int c = a / b;
+    // printf("%d", c);
 
     hcf();
 }
