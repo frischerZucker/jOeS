@@ -9,6 +9,7 @@
 
 #include "charset.h"
 #include "gdt.h"
+#include "hcf.h"
 #include "idt.h"
 #include "terminal.h"
 
@@ -22,21 +23,6 @@ __attribute__((used, section(".limine_requests"))) static volatile struct limine
 __attribute__((used, section(".limine_requests_start"))) static volatile LIMINE_REQUESTS_START_MARKER;
 
 __attribute__((used, section(".limine_requests_end"))) static volatile LIMINE_REQUESTS_END_MARKER;
-
-/*
-    Halt-And-Catch-Fire function.
-
-    Stops all action and does nothing.
-*/
-static void hcf(void)
-{
-    while (1)
-    {
-        asm("hlt");
-    }
-}
-
-extern void _test();
 
 void kmain(void)
 {
