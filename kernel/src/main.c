@@ -74,6 +74,8 @@ void kmain(void)
     // volatile int b = 0;
     // volatile int c = a / b;
     // printf("%d", c);
+    // This should generate an Invalid Opcode exception.
+    // printf("%d", 1/0);
 
     hcf();
 }
