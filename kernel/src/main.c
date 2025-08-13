@@ -70,10 +70,9 @@ void kmain(void)
     // This should fail and trigger a "Division by 0" exception.
     // The volatile stuff is needed to force a division at runtime. 
     // Otherwise the compiler generates an "un2" isntruction and I get an Invalid Opcode exception instead of a Divide Error.
-    // volatile int a = 1;
-    // volatile int b = 0;
-    // volatile int c = a / b;
-    // printf("%d", c);
+    volatile int a = 1;
+    volatile int b = 0;
+    volatile int c = a / b;
     // This should generate an Invalid Opcode exception.
     // printf("%d", 1/0);
 

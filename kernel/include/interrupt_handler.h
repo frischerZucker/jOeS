@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 
+#define INT_DESCRIPTION_RESERVED 22
+#define INT_DESCRIPTION_EXTERNAL 23
+#define INT_DESCRIPTION_UNKNOWN_EXCEPTION 24
+
 enum interrupts
 {
     INT_DIVIDE_ERR,
@@ -261,6 +265,34 @@ enum interrupts
     INT_EXT_INT221,
     INT_EXT_INT222,
     INT_EXT_INT224
+};
+
+char *interrupt_descriptions[24] = {
+    "Divide Error.\n",
+    "Debug Exception.\n",
+    "NMI Interrupt.\n",
+    "Breakpoint.\n",
+    "Overflow.\n",
+    "BOUND Range Exceeded.\n",
+    "Invalid Opcode.\n",
+    "Device Not Available (No Math Coprocessor).\n",
+    "Double Fault: err=%d\n",
+    "Coprocessor Segment Overrun.\n",
+    "Invalid TSS: err=%d\n",
+    "Segment Not Present: err=%d\n",
+    "Stack-Segment Fault: err=%d\n",
+    "General Protection Fault: err=%d\n",
+    "Page Fault: err=%d\n",
+    "Intel reserved. This shouldn't come up.\n",
+    "x87 FPU Floating-Point Error (Math Fault).\n",
+    "Alignment Check: err=%d\n",
+    "Machine Check.\n",
+    "SIMD Floating-Point Exception.\n",
+    "Virtualization Exception.\n"
+    "Control Protection Exception: err=%d\n",
+    "Reserved for future use. This shouldn't come up.\n",
+    "External Interrupt: %d\n",
+    "An unknown Exception / Interrupt occured: int=%d, errno=%d\n"
 };
 
 struct interrupt_stack_frame
