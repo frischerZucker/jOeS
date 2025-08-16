@@ -267,7 +267,7 @@ enum interrupts
     INT_EXT_INT224
 };
 
-char *interrupt_descriptions[24] = {
+char *interrupt_descriptions[25] = {
     "Divide Error.\n",
     "Debug Exception.\n",
     "NMI Interrupt.\n",
