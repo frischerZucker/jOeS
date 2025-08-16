@@ -11,6 +11,7 @@
 #include "gdt.h"
 #include "hcf.h"
 #include "idt.h"
+#include "port_io.h"
 #include "terminal.h"
 
 // set limine base revision to 3
@@ -70,11 +71,15 @@ void kmain(void)
     // This should fail and trigger a "Division by 0" exception.
     // The volatile stuff is needed to force a division at runtime. 
     // Otherwise the compiler generates an "un2" isntruction and I get an Invalid Opcode exception instead of a Divide Error.
-    volatile int a = 1;
-    volatile int b = 0;
-    volatile int c = a / b;
+    // volatile int a = 1;
+    // volatile int b = 0;
+    // volatile int c = a / b;
     // This should generate an Invalid Opcode exception.
     // printf("%d", 1/0);
 
+    // If the kernel is run using qemu with "-serial stdio" an 'A' should be printed to stdout. 
+    // It shows up when I run it, so I would say it works :)
+    port_write_byte(0x3F8, 'A'); 
+    
     hcf();
 }
