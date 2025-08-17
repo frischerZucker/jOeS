@@ -3,6 +3,12 @@
 
 #include <stdint.h>
 
+/*
+    Writes a byte to a port.
+
+    @param port Port to write data to.
+    @param data Data to write to port.
+*/
 static inline void port_write_byte(uint16_t port, uint8_t data)
 {
     asm volatile (
@@ -13,6 +19,12 @@ static inline void port_write_byte(uint16_t port, uint8_t data)
     );
 }
 
+/*
+    Reads a byte from a port.
+
+    @param port Port to read data from.
+    @returns A byte read from the port.
+*/
 static inline uint8_t port_read_byte(uint16_t port)
 {
     uint8_t data;
