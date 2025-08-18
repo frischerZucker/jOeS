@@ -94,6 +94,14 @@ uint8_t terminal_put_char(uint8_t c)
         terminal.cursor_y = terminal.cursor_y + 1;
     }
 
+    // Clear the screen when its end is reached.
+    if ((uint64_t)((terminal.cursor_y + 1) * terminal.char_h) > terminal.framebuffer->height)
+    {
+        terminal.cursor_x = 0;
+        terminal.cursor_y = 0;
+        framebuffer_clear(terminal.framebuffer, 0);
+    }
+
     return 0;
 }
 
