@@ -3,6 +3,8 @@
 #include "stdio.h"
 
 #include "hcf.h"
+#include "pic.h"
+#include "port_io.h"
 
 /*
     Handles CPU exceptions and interrupts.
@@ -12,6 +14,8 @@
       prints a predefined error message and halts the system.
     - For exceptions with error codes (e.g. page fault),
       prints the description and the error code and halts.
+    - For external interrupts 0 to 15 (from the PIC), prints the IRQs number
+      and sends an End-Of-Interrupt command.
     - For unknown / unhandled interrupts, prints a generic message 
       including the interrupt vector and error code, then halts.
 
@@ -61,6 +65,72 @@ void interrupt_handler(struct interrupt_stack_frame *stack)
         printf(interrupt_descriptions[stack->interrupt_vector], stack->error_code);
         hcf();
         break;
+    // IRQs from the PIC.
+    case INT_EXT_INT0:
+        printf("EXT0\n");
+        pic_send_eoi(0);
+        break;
+    case INT_EXT_INT1:
+        printf("EXT1\n");
+        pic_send_eoi(1);
+        break;
+    case INT_EXT_INT2:
+        printf("EXT2\n");
+        pic_send_eoi(2);
+        break;
+    case INT_EXT_INT3:
+        printf("EXT3\n");
+        pic_send_eoi(3);
+        break;
+    case INT_EXT_INT4:
+        printf("EXT4\n");
+        pic_send_eoi(4);
+        break;
+    case INT_EXT_INT5:
+        printf("EXT5\n");
+        pic_send_eoi(5);
+        break;
+    case INT_EXT_INT6:
+        printf("EXT6\n");
+        pic_send_eoi(6);
+        break;
+    case INT_EXT_INT7:
+        printf("EXT7\n");
+        pic_send_eoi(7);
+        break;
+    case INT_EXT_INT8:
+        printf("EXT8\n");
+        pic_send_eoi(8);
+        break;
+    case INT_EXT_INT9:
+        printf("EXT9\n");
+        pic_send_eoi(9);
+        break;
+    case INT_EXT_INT10:
+        printf("EXT10\n");
+        pic_send_eoi(10);
+        break;
+    case INT_EXT_INT11:
+        printf("EXT11\n");
+        pic_send_eoi(11);
+        break;
+    case INT_EXT_INT12:
+        printf("EXT12\n");
+        pic_send_eoi(12);
+        break;
+    case INT_EXT_INT13:
+        printf("EXT13\n");
+        pic_send_eoi(13);
+        break;
+    case INT_EXT_INT14:
+        printf("EXT14\n");
+        pic_send_eoi(14);
+        break;
+    case INT_EXT_INT15:
+        printf("EXT15\n");
+        pic_send_eoi(15);
+        break;
+
     // Catches Exceptions / Interrupts that aren't handled.
     default:
         printf(interrupt_descriptions[INT_DESCRIPTION_UNKNOWN_EXCEPTION], stack->interrupt_vector, stack->error_code);

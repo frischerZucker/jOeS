@@ -11,8 +11,10 @@
 #include "gdt.h"
 #include "hcf.h"
 #include "idt.h"
-#include "port_io.h"
+#include "pic.h"
 #include "terminal.h"
+
+extern uint8_t is_a20_enabled();
 
 // set limine base revision to 3
 __attribute__((used, section(".limine_requests"))) static volatile LIMINE_BASE_REVISION(3);
@@ -44,7 +46,7 @@ void kmain(void)
 
     terminal_init(framebuffer, CHAR_WIDTH * 1.3, CHAR_HEIGHT * 2.2);
 
-    terminal_write_string("Joe Biden\n", strlen("Joe Biden\n"));
+    terminal_write_string("Joe\n", strlen("Joe\n"));
     terminal_set_color(0xaa0000);
     terminal_put_char('o');
     terminal_put_char('\t');
@@ -64,8 +66,7 @@ void kmain(void)
     // It's the same as with the GDT.. I think if this code is printed, the IDT was loaded correctly.
     terminal_write_string("> IDT loaded successfully.\n", strlen("> IDT loaded successfully.\n"));
 
-    printf("> Testing printf():\nchar: %c\nescaping the format character: %%\nstring:%s\nint > 0: %d\nint < 0:%d\n", 'a', "no service", 187420, -161);
-
+    // printf("> Testing printf():\nchar: %c\nescaping the format character: %%\nstring:%s\nint > 0: %d\nint < 0:%d\n", 'a', "no service", 187420, -161);
     // This triggers a breakpoint interrupt.
     // asm("int3");
     // This should fail and trigger a "Division by 0" exception.
@@ -76,10 +77,16 @@ void kmain(void)
     // volatile int c = a / b;
     // This should generate an Invalid Opcode exception.
     // printf("%d", 1/0);
-
     // If the kernel is run using qemu with "-serial stdio" an 'A' should be printed to stdout. 
     // It shows up when I run it, so I would say it works :)
-    port_write_byte(0x3F8, 'A'); 
-    
+    // port_write_byte(0x3F8, 'A'); 
+
+    // Initialize the PIC and enable interrupts.
+    pic_init(0x20, 0x28);    
+    asm("sti");
+
+    pic_enable_irq(0);
+
+    for(;;);
     hcf();
 }
