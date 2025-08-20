@@ -12,6 +12,7 @@
 #include "hcf.h"
 #include "idt.h"
 #include "pic.h"
+#include "pit.h"
 #include "terminal.h"
 
 extern uint8_t is_a20_enabled();
@@ -85,8 +86,9 @@ void kmain(void)
     pic_init(0x20, 0x28);    
     asm("sti");
 
+    pit_init_channel(PIT_CHANNEL_0, 1000, PIT_SC_COUNTER_0 | PIT_MODE_SQUARE_WAVE);
+
     pic_enable_irq(0);
 
-    for(;;);
     hcf();
 }

@@ -66,8 +66,7 @@ void interrupt_handler(struct interrupt_stack_frame *stack)
         hcf();
         break;
     // IRQs from the PIC.
-    case INT_EXT_INT0:
-        printf("EXT0\n");
+    case INT_EXT_INT0: // PIT
         pic_send_eoi(0);
         break;
     case INT_EXT_INT1:
