@@ -14,3 +14,7 @@ export SYSROOT="$PROJECT_ROOT_DIR/sysroot"
 
 export PROJECTS="libc kernel"
 export SYSTEM_HEADER_PROJECTS="libc kernel"
+
+# Arguments to pass to QEMU.
+export QEMU_ARGS="-cdrom image.iso \
+                  -serial mon:stdio"

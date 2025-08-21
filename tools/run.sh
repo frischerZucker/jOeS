@@ -7,4 +7,6 @@ export PROJECT_ROOT_DIR="$SCRIPT_LOCATION/.."
 
 cd $PROJECT_ROOT_DIR
 
-qemu-system-x86_64 -cdrom image.iso
+. ./tools/config.sh
+
+qemu-system-x86_64 $QEMU_ARGS
