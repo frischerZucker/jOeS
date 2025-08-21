@@ -13,6 +13,7 @@
 #include "idt.h"
 #include "pic.h"
 #include "pit.h"
+#include "serial.h"
 #include "terminal.h"
 
 // set limine base revision to 3
@@ -65,26 +66,29 @@ void kmain(void)
     // It's the same as with the GDT.. I think if this code is printed, the IDT was loaded correctly.
     terminal_write_string("> IDT loaded successfully.\n", strlen("> IDT loaded successfully.\n"));
 
-    // printf("> Testing printf():\nchar: %c\nescaping the format character: %%\nstring:%s\nint > 0: %d\nint < 0:%d\n", 'a', "no service", 187420, -161);
-    // This triggers a breakpoint interrupt.
-    // asm("int3");
-    // This should fail and trigger a "Division by 0" exception.
-    // The volatile stuff is needed to force a division at runtime. 
-    // Otherwise the compiler generates an "un2" isntruction and I get an Invalid Opcode exception instead of a Divide Error.
-    // volatile int a = 1;
-    // volatile int b = 0;
-    // volatile int c = a / b;
-    // This should generate an Invalid Opcode exception.
-    // printf("%d", 1/0);
-    // If the kernel is run using qemu with "-serial stdio" an 'A' should be printed to stdout. 
-    // It shows up when I run it, so I would say it works :)
-    // port_write_byte(0x3F8, 'A'); 
-
     // Initialize the PIC and enable interrupts.
     pic_init(0x20, 0x28);    
     asm("sti");
     pit_init_channel(PIT_CHANNEL_0, 1000, PIT_SC_COUNTER_0 | PIT_MODE_SQUARE_WAVE);
     pic_enable_irq(0);
+
+    if (serial_init(COM1, 38400, SERIAL_DATA_BITS_8 | SERIAL_PARITY_NONE | SERIAL_STOP_BITS_1) != SERIAL_OK)
+    {
+        printf("ERROR: Something went wrong setting up COM1 serial port!");
+        hcf();
+    }
+
+    serial_print_line(COM1, "If you can see this, sending strings via serial works! :D\n");
+
+    char buffer[32];
+    serial_read_line(COM1, buffer, 32);
+    printf("%s", buffer);    
+
+    while (1)
+    {
+        printf("%c", serial_read_byte(COM1));
+    }
+    
 
     hcf();
 }
