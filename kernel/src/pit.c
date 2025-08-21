@@ -1,5 +1,7 @@
 #include "pit.h"
 
+#include "stdio.h"
+
 #include "port_io.h"
 
 /*
