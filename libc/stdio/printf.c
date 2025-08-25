@@ -6,8 +6,6 @@
 #include "string.h"
 #include "terminal.h"
 
-#define __is_libk
-
 /*
     Writes a string to the terminal and substitutes format specifiers (%...) with variables.
     
