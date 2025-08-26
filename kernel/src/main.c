@@ -13,6 +13,7 @@
 #include "idt.h"
 #include "pic.h"
 #include "pit.h"
+#include "ps2.h"
 #include "serial.h"
 #include "terminal.h"
 
@@ -80,15 +81,7 @@ void kmain(void)
 
     serial_print_line(COM1, "If you can see this, sending strings via serial works! :D\n");
 
-    char buffer[32];
-    serial_read_line(COM1, buffer, 32);
-    printf("%s", buffer);    
-
-    while (1)
-    {
-        printf("%c", serial_read_byte(COM1));
-    }
-    
+    ps2_init_controller();    
 
     hcf();
 }
