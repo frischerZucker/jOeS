@@ -21,6 +21,9 @@
 // Command to send to a device to reset it.
 #define PS2_RESET_DEVICE 0xff
 
+// For how many iterations sending and receiving data via the PS/2 port is tried until we give up.
+#define PS2_TIMEOUT 100000
+
 enum ps2_commands
 {
     PS2_CMD_READ_BYTE_0 = 0x20,
@@ -111,36 +114,68 @@ static void ps2_send_command(uint8_t command)
 }
 
 /*
-    Sends a byte to a PS/2 port.
+    Sends a byte to a PS/2 port with timeout handling.
+
+    Waits until the controller's input buffer is empty, so that new data can be sent.
+    If the buffer stays full for more the PS2_TIMEOUT iterations, assumes an error and abborts.
 
     @param port Specifies to which PS/2 port the data should be sent.
     @param data Data to send to the port.
+    @returns PS2_OK if the byte was successfully sent, PS2_ERROR_TIMEOUT if the operation timed out.
 */
-void ps2_send_byte(uint8_t port, uint8_t data)
+uint8_t ps2_send_byte(uint8_t port, uint8_t data)
 {
+    unsigned int timeout = PS2_TIMEOUT;
+
     // Make the controller send the data to the second PS/2 port, if needed.
     if (port == PS2_PORT_2)
     {
         ps2_send_command(PS2_CMD_SEND_NEXT_BYTE_TO_PORT_2);
     }
 
+    // Wait until data can be sent.
     while (INPUT_BUFFER_FULL(port_read_byte(PS2_STATUS)))
-        ;
+    {
+        timeout = timeout - 1;
+        if (timeout == 0) // Waiting took too long, so I assume something went wrong and we can give up.
+        {
+            return PS2_ERROR_TIMEOUT;
+        }
+    }
 
     port_write_byte(PS2_DATA, data);
+    
+    return PS2_OK;
 }
 
 /*
-    Receives a byte from a PS/2 port.
+    Receives a byte from the PS/2 port with timeout handling.
 
-    @returns A byte read from the port.
+    Waits until the controller's output buffer contains data to read.
+    If the buffer stays empty for more the PS2_TIMEOUT iterations, assumes an error, writes 0 to *dest and abborts.
+    If data is available before the timeout, reads one byte from the PS/2 port into *dest.
+
+    @param dest Pointer to a variable where the received byte is stored.
+    @returns PS2_OK if a byte was successfully read, PS2_ERROR_TIMEOUT if the operation timed out.
 */
-uint8_t ps2_receive_byte(void)
+uint8_t ps2_receive_byte(uint8_t *dest)
 {
-    while (OUTPUT_BUFFER_FULL(port_read_byte(PS2_STATUS)) == 0)
-        ;
+    unsigned int timeout = PS2_TIMEOUT;
 
-    return port_read_byte(PS2_DATA);
+    // Wait until there is data to read. 
+    while (OUTPUT_BUFFER_FULL(port_read_byte(PS2_STATUS)) == 0)
+    {
+        timeout = timeout - 1;
+        if (timeout == 0) // Waiting for data took too long, so I assume something went wrong and we can give up.
+        {
+            *dest = 0; // Returns a defined value after a timeout.
+            return PS2_ERROR_TIMEOUT;
+        }
+    }
+
+    *dest = port_read_byte(PS2_DATA);
+
+    return PS2_OK;
 }
 
 /*
@@ -150,14 +185,25 @@ uint8_t ps2_receive_byte(void)
 
     @param port Specifies at which PS/2 port the device to reset is connected.
 
-    @returns PS2_OK if the devices response is ok, PS2_ERROR_DEVICE_RESET_FAILED if not.
+    @returns PS2_OK if the devices response is ok, PS2_ERROR_DEVICE_RESET_FAILED if not
+             or PS2_ERROR_TIMEOUT if there was a timeout.
 */
 uint8_t ps2_reset_device(uint8_t port)
 {   
     ps2_send_byte(port, PS2_RESET_DEVICE);
 
-    uint8_t response_1 = ps2_receive_byte();
-    uint8_t response_2 = ps2_receive_byte();
+    uint8_t response_1 = 0, response_2 = 0;
+    
+    if (ps2_receive_byte(&response_1) == PS2_ERROR_TIMEOUT)
+    {
+        printf("PS/2: Timeout during device reset!");
+        return PS2_ERROR_TIMEOUT;
+    }
+    if (ps2_receive_byte(&response_2) == PS2_ERROR_TIMEOUT)
+    {
+        printf("PS/2: Timeout during device reset!");
+        return PS2_ERROR_TIMEOUT;
+    }
 
     // The response to a reset should be a "Command Acknowledged" and a "Selftest Passed", otherwise something went wrong.
     if ((response_1 == PS2_DEV_ACK && response_2 == PS2_DEV_SELFTEST_PASSED) || (response_1 == PS2_DEV_SELFTEST_PASSED && response_2 == PS2_DEV_ACK))
@@ -181,11 +227,14 @@ uint8_t ps2_reset_device(uint8_t port)
     - I just assume that a PS/2 controller exists. Maybe I should add code to check if this is true.
     - Identify connected devices and save this information somewhere.
 
-    @returns PS2_OK if everything works, PS2_ERROR_NO_WORKING_PORTS if both ports fail the interface tests
-             or PS2_ERROR_CONTROLLER_TEST_FAILED if the controller test failed.
+    @returns PS2_OK if everything works, PS2_ERROR_NO_WORKING_PORTS if both ports fail the interface tests,
+             PS2_ERROR_CONTROLLER_TEST_FAILED if the controller test failed or PS2_ERROR_TIMEOUT if there
+             was a timeout.
 */
 uint8_t ps2_init_controller(void)
 {
+    uint8_t response = 0; // Used for receiving data via PS/2 when I don't really know where to put it.
+
     // Disable PS/2 ports, so that connected devices cannot mess up the initialization by sending data in the wrong moment.
     ps2_send_command(PS2_CMD_DISABLE_PORT_1);
     ps2_send_command(PS2_CMD_DISABLE_PORT_2);
@@ -196,7 +245,12 @@ uint8_t ps2_init_controller(void)
     union ps2_config_byte config_byte;
     // Read the config byte.
     ps2_send_command(PS2_CMD_READ_CONFIG_BYTE);
-    config_byte.byte = ps2_receive_byte();
+    // config_byte.byte = ps2_receive_byte();
+    if (ps2_receive_byte(&config_byte.byte) == PS2_ERROR_TIMEOUT)
+    {
+        printf("PS/2: Timeout while waiting for config byte!\n");
+        return PS2_ERROR_TIMEOUT;
+    }
     // Disable IRQs  and enable timers of both PS/2 ports, disable translation for port 1.
     config_byte.bits.port_1_int_enabled = 0;
     config_byte.bits.port_2_int_enabled = 0;
@@ -209,7 +263,12 @@ uint8_t ps2_init_controller(void)
 
     // Perform controller self test.
     ps2_send_command(PS2_CMD_TEST_CONTROLLER);
-    if (ps2_receive_byte() != PS2_CONTROLLER_TEST_PASSED)
+    if (ps2_receive_byte(&response) == PS2_ERROR_TIMEOUT)
+    {
+        printf("PS/2: Timeout during controller self test!\n");
+        return PS2_ERROR_TIMEOUT;
+    }
+    if (response != PS2_CONTROLLER_TEST_PASSED)
     {
         printf("PS/2: Controller self test failed!\n");
         return PS2_ERROR_CONTROLLER_TEST_FAILED;
@@ -222,7 +281,12 @@ uint8_t ps2_init_controller(void)
     // Check if the second PS/2 port exists.
     ps2_send_command(PS2_CMD_ENABLE_PORT_2);
     ps2_send_command(PS2_CMD_READ_CONFIG_BYTE);
-    if ((ps2_receive_byte() & (1 << 1)) == 0)
+    if (ps2_receive_byte(&response) == PS2_ERROR_TIMEOUT)
+    {
+        printf("PS/2: Timeout while checking if port 2 exists!\n");
+        return PS2_ERROR_TIMEOUT;
+    }
+    if ((response & (1 << 1)) == 0)
     {
         // Make sure port 2 is disabled again.
         ps2_send_command(PS2_CMD_DISABLE_PORT_2);
@@ -240,7 +304,12 @@ uint8_t ps2_init_controller(void)
 
     // Perform interface tests for port 1.
     ps2_send_command(PS2_CMD_TEST_PORT_1);
-    if (ps2_receive_byte() == PS2_PORT_TEST_PASSED)
+    if (ps2_receive_byte(&response) == PS2_ERROR_TIMEOUT)
+    {
+        printf("PS/2: Timeout during port 1 interface test!\n");
+        return PS2_ERROR_TIMEOUT;
+    }
+    if (response == PS2_PORT_TEST_PASSED)
     {
         ps2_port_1_works = true;
         printf("PS/2: Port 1 passed the interface tests.\n");
@@ -254,7 +323,12 @@ uint8_t ps2_init_controller(void)
     if (ps2_port_2_supported)
     {
         ps2_send_command(PS2_CMD_TEST_PORT_1);
-        if (ps2_receive_byte() == PS2_PORT_TEST_PASSED)
+        if (ps2_receive_byte(&response) == PS2_ERROR_TIMEOUT)
+        {
+            printf("PS/2: Timeout during port 2 interface test!\n");
+            return PS2_ERROR_TIMEOUT;
+        }
+        if (response == PS2_PORT_TEST_PASSED)
         {
             ps2_port_2_works = true;
             printf("PS/2: Port 2 passed the interface tests.\n");
@@ -307,6 +381,6 @@ uint8_t ps2_init_controller(void)
         }
     }
 
-    printf("PS/2: Controller initialized.");
+    printf("PS/2: Controller initialized.\n");
     return 0;
 }

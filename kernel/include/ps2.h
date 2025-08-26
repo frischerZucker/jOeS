@@ -20,7 +20,10 @@ enum ps2_error_codes
 uint8_t ps2_init_controller();
 
 uint8_t ps2_reset_device(uint8_t port);
-void ps2_send_byte(uint8_t port, uint8_t data);
-uint8_t ps2_receive_byte(void);
+
+uint8_t ps2_identify_device(uint8_t port);
+
+uint8_t ps2_send_byte(uint8_t port, uint8_t data);
+uint8_t ps2_receive_byte(uint8_t *dest);
 
 #endif

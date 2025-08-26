@@ -81,7 +81,7 @@ void kmain(void)
 
     serial_print_line(COM1, "If you can see this, sending strings via serial works! :D\n");
 
-    ps2_init_controller();    
-
+    ps2_init_controller();
+    
     hcf();
 }
