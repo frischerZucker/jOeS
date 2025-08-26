@@ -114,6 +114,17 @@ static void ps2_send_command(uint8_t command)
 }
 
 /*
+    Flushes the controllers output buffer and discards its content.
+*/
+static void ps2_flush_output_buffer(void)
+{
+    while (OUTPUT_BUFFER_FULL(port_read_byte(PS2_STATUS)))
+    {
+        port_read_byte(PS2_DATA); // Discard data that was read.
+    }
+}
+
+/*
     Sends a byte to a PS/2 port with timeout handling.
 
     Waits until the controller's input buffer is empty, so that new data can be sent.
@@ -235,13 +246,16 @@ uint8_t ps2_init_controller(void)
 {
     uint8_t response = 0; // Used for receiving data via PS/2 when I don't really know where to put it.
 
+    // Read data from the output buffer so that nothing unexpected (e.g. some key presses) are stuck in there.
+    ps2_flush_output_buffer();
+    
     // Disable PS/2 ports, so that connected devices cannot mess up the initialization by sending data in the wrong moment.
     ps2_send_command(PS2_CMD_DISABLE_PORT_1);
     ps2_send_command(PS2_CMD_DISABLE_PORT_2);
 
-    // Read data that maybe got stuck in the controllers output buffer.
-    port_read_byte(PS2_DATA);
-
+    // Do it again. Just to be sure.
+    ps2_flush_output_buffer();
+    
     union ps2_config_byte config_byte;
     // Read the config byte.
     ps2_send_command(PS2_CMD_READ_CONFIG_BYTE);
@@ -251,11 +265,11 @@ uint8_t ps2_init_controller(void)
         printf("PS/2: Timeout while waiting for config byte!\n");
         return PS2_ERROR_TIMEOUT;
     }
-    // Disable IRQs  and enable timers of both PS/2 ports, disable translation for port 1.
+    // Disable IRQs clocks of both PS/2 ports, disable translation for port 1.
     config_byte.bits.port_1_int_enabled = 0;
     config_byte.bits.port_2_int_enabled = 0;
     config_byte.bits.port_1_clk_enabled = 0;
-    config_byte.bits.port_2_clk_enabled = 0;
+    config_byte.bits.port_2_clk_enabled = 1;
     config_byte.bits.port_1_translation_enabled = 0;
     // Send back the modified config byte.
     ps2_send_command(PS2_CMD_WRITE_CONFIG_BYTE);
@@ -270,7 +284,7 @@ uint8_t ps2_init_controller(void)
     }
     if (response != PS2_CONTROLLER_TEST_PASSED)
     {
-        printf("PS/2: Controller self test failed!\n");
+        printf("PS/2: Controller self test failed! %d\n", response);
         return PS2_ERROR_CONTROLLER_TEST_FAILED;
     }
 
