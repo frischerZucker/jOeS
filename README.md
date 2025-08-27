@@ -21,7 +21,10 @@
 
 ## Project Goals
 
-~~My current goal is to implement a basic terminal that outputs text to the screen using a framebuffer, acting as a minimal "Hello World" demonstration.~~ I got a framebuffer up and running with a simple terminal and a (not quite finished) printf() function! My next goal is to get interrupts working. Let's see how that goes.. :D
+~~I got a framebuffer up and running with a simple terminal and a (not quite finished) printf() function! My next goal is to get interrupts working. Let's see how that goes.. :D~~
+So, interrupts are working, I got drivers for PIC, PIT, Serial and the I8042 PS/2 controller.
+The next goal is to write a PS/2 keyboard driver. :) 
+
 
 ## Project Structure
 ```
@@ -36,6 +39,7 @@
 |       ├── stdio/            # stdio.h source files
 |       ├── string/           # string.h source files
 |       └── GNUmakefile       # libc makefile
+├── .gitignore                 
 ├── tools/                    # build scripts & additional tools
 ├── README.md                 # you are here lol
 └── limine.conf               # limine config file
@@ -47,7 +51,7 @@ To build and run **jOeS** you need:
 - a `x86_64-elf-gcc` cross compiler toolchain as described [here](https://wiki.osdev.org/GCC_Cross-Compiler)
 - GNU `make`
 - NASM
-- QEMU
+- `qemu-system-x86_64`
 
 For some of the additional tools you also need:
 - Python
