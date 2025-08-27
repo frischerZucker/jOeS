@@ -81,11 +81,13 @@ void kmain(void)
 
     serial_print_line(COM1, "If you can see this, sending strings via serial works! :D\n");
 
-    char buffer[32];
-    serial_read_line(COM1, buffer, 32);
-    printf("%s", buffer);
+    // char buffer[32];
+    // serial_read_line(COM1, buffer, 32);
+    // printf("%s", buffer);
     
     ps2_init_controller();
+
+    printf("Connected PS/2 devices:\n - port1: %d\n - port2: %d\n", ps2_ports.device_id_port_1, ps2_ports.device_id_port_2);
 
     hcf();
 }

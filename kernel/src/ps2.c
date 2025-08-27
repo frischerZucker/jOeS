@@ -14,11 +14,19 @@
 // Use this as port for sending command data via ps2_send_byte().
 #define PS2_PORT_CMD 0
 
-// Command to send to a device to reset it.
-#define PS2_RESET_DEVICE 0xff
-
 // For how many iterations sending and receiving data via the PS/2 port is tried until we give up.
 #define PS2_TIMEOUT 100000
+
+// Device types and there responses to an identify command. This list isn't complete. 
+enum ps2_device_types
+{
+    PS2_KBD_AT = 0x01ffff, // There is no response for this device type.
+    PS2_MOUSE_STANDARD = 0x0000,
+    PS2_MOUSE_SCROLL_WHEEL = 0x0300,
+    PS2_MOUSE_5_BUTTONS = 0x0400,
+    PS2_KBD_MF2_1 = 0xab83, // The same keyboard as below, but it has two different possible responses.
+    PS2_KBD_MF2_2 = 0xabc1,
+};
 
 enum ps2_commands
 {
@@ -49,9 +57,20 @@ enum ps2_commands
 #define PS2_CMD_PULSE_LINE_N(n) (PS2_CMD_PULSE_ALL_LINES | (0x0f & ~(1 << n)))
 #define PS2_CMD_PULSE_RESET PS2_PULSE_LINE_N(0) // Pulse reset line low for 6 ms.
 
+// Commands that can be sent to PS/2 devices (no matter what they are).
+enum ps2_device_commands
+{
+    PS2_DEV_CMD_ECHO = 0xee,
+    PS2_DEV_CMD_IDENTIFY = 0xf2,
+    PS2_DEV_CMD_ENABLE_SCANNING = 0xf4,
+    PS2_DEV_CMD_DISABLE_SCANNING = 0xf5,
+    PS2_DEV_CMD_RESET = 0xff
+};
+// Responses a device can send after receiving a command.
 enum ps2_device_response
 {
     PS2_DEV_ACK = 0xfa,
+    PS2_DEV_RESEND = 0xfe,
     PS2_DEV_SELFTEST_PASSED = 0xaa,
     PS2_DEV_ECHO = 0xee,
     PS2_DEV_SELFTEST_FAILED_1 = 0xfc,
@@ -95,6 +114,7 @@ union ps2_config_byte
 static bool ps2_port_2_supported = false;
 static bool ps2_port_1_works = false;
 static bool ps2_port_2_works = false;
+struct ps2_device_status ps2_ports = {false, 0, false, 0};
 
 /*
     Checks if the controllers output buffer (incoming data) is full.
@@ -171,7 +191,7 @@ uint8_t ps2_send_byte(uint8_t port, uint8_t data)
     }
 
     port_write_byte(PS2_DATA, data);
-    
+
     return PS2_OK;
 }
 
@@ -189,7 +209,7 @@ uint8_t ps2_receive_byte(uint8_t *dest)
 {
     unsigned int timeout = PS2_TIMEOUT;
 
-    // Wait until there is data to read. 
+    // Wait until there is data to read.
     while (output_buffer_full() == 0)
     {
         timeout = timeout - 1;
@@ -216,11 +236,11 @@ uint8_t ps2_receive_byte(uint8_t *dest)
              or PS2_ERROR_TIMEOUT if there was a timeout.
 */
 uint8_t ps2_reset_device(uint8_t port)
-{   
-    ps2_send_byte(port, PS2_RESET_DEVICE);
+{
+    ps2_send_byte(port, PS2_DEV_CMD_RESET);
 
     uint8_t response_1 = 0, response_2 = 0;
-    
+
     if (ps2_receive_byte(&response_1) == PS2_ERROR_TIMEOUT)
     {
         printf("PS/2: Timeout during device reset!");
@@ -244,15 +264,78 @@ uint8_t ps2_reset_device(uint8_t port)
 }
 
 /*
+    Detects the type of a device connected to a PS/2 port.
+
+    Detects the type of a device connected to a PS/2 port by sending an identify command.
+    Side effect: Disables scanning for the device.
+
+    @param port Specifies at which PS/2 port the device to identify is connected.
+    @param device_id Pointer to a variable where the devices id is stored.
+    @returns PS2_ERROR_NO_ACK or PS2_ERROR_TIMEOUT if something went wrong, otherwise PS2_OK.
+*/
+uint8_t ps2_identify_device(uint8_t port, int32_t *device_id)
+{
+
+    // Read and discard data from the PS/2 port that was there before we started the identification.
+    // Otherwise there's a chance data is read that was no response to the commands that were sent in this function.
+    ps2_flush_output_buffer();
+
+    uint8_t response = 0;
+    ps2_send_byte(port, PS2_DEV_CMD_DISABLE_SCANNING); // Disable scanning.
+    ps2_receive_byte(&response);
+    if (response != PS2_DEV_ACK)
+    {
+        return PS2_ERROR_NO_ACK;
+    }
+
+    // Save the controllers config byte so it can be restored later.
+    uint8_t config;
+    ps2_send_command(PS2_CMD_READ_CONFIG_BYTE);
+    if (ps2_receive_byte(&config) == PS2_ERROR_TIMEOUT)
+    {
+        return PS2_ERROR_TIMEOUT;
+    }
+    // Disable translation, so that we don't have to worry about different responses for when translation is enabled or disabled.  
+    ps2_send_command(PS2_CMD_WRITE_CONFIG_BYTE);
+    ps2_send_byte(PS2_PORT_CMD, (config & ~(1 << 6)));
+
+    ps2_send_byte(port, PS2_DEV_CMD_IDENTIFY); // Ask the device to identify itself.
+    ps2_receive_byte(&response);
+    if (response != PS2_DEV_ACK)
+    {
+        return PS2_ERROR_NO_ACK;
+    }
+
+    // If no response arrives, it's an ancient AT keyboard.
+    // Set a device_id for this one as default and overwrite it if there is a response.
+    *device_id = PS2_KBD_AT;    
+    // Read up to two bytes as response.
+    if (ps2_receive_byte(&response) == PS2_OK)
+    {
+        *device_id = (response << 8);
+        // Wait for a second byte that may be a part of the response.
+        if (ps2_receive_byte(&response) == PS2_OK)
+        {
+            *device_id = *device_id | response;
+        }
+    }
+
+    // Restore the old config byte. Enables translation if it was turned off earlier.
+    ps2_send_command(PS2_CMD_WRITE_CONFIG_BYTE);
+    ps2_send_byte(PS2_PORT_CMD, config);
+
+    return PS2_OK;
+}
+
+/*
     Initializes the PS/2 controller.
 
     Initializes the PS/2 controller and checks if a second port exists.
     Performs a controller test as well as interface tests for existing ports.
-    Enables working ports and resets connected devices.
+    Enables working ports, resets and identifies connected devices.
 
     TODO:
     - I just assume that a PS/2 controller exists. Maybe I should add code to check if this is true.
-    - Identify connected devices and save this information somewhere.
 
     @returns PS2_OK if everything works, PS2_ERROR_NO_WORKING_PORTS if both ports fail the interface tests,
              PS2_ERROR_CONTROLLER_TEST_FAILED if the controller test failed or PS2_ERROR_TIMEOUT if there
@@ -264,14 +347,14 @@ uint8_t ps2_init_controller(void)
 
     // Read data from the output buffer so that nothing unexpected (e.g. some key presses) are stuck in there.
     ps2_flush_output_buffer();
-    
+
     // Disable PS/2 ports, so that connected devices cannot mess up the initialization by sending data in the wrong moment.
     ps2_send_command(PS2_CMD_DISABLE_PORT_1);
     ps2_send_command(PS2_CMD_DISABLE_PORT_2);
 
     // Do it again. Just to be sure.
     ps2_flush_output_buffer();
-    
+
     union ps2_config_byte config_byte;
     // Read the config byte.
     ps2_send_command(PS2_CMD_READ_CONFIG_BYTE);
@@ -395,13 +478,14 @@ uint8_t ps2_init_controller(void)
     ps2_send_command(PS2_CMD_WRITE_CONFIG_BYTE);
     ps2_send_byte(PS2_PORT_CMD, config_byte.byte);
 
-    // Reset connected devices.
+    // Reset connected PS/2 devices. If the reset fails there is no (working) device connected at the port.
     if (ps2_port_1_works)
     {
         if (ps2_reset_device(PS2_PORT_1) != PS2_OK)
         {
             printf("PS/2: Reset of device at port 1 failed!\n");
         }
+        ps2_ports.port_1_populated = true;
     }
     if (ps2_port_2_works)
     {
@@ -409,6 +493,19 @@ uint8_t ps2_init_controller(void)
         {
             printf("PS/2: Reset of device at port 2 failed!\n");
         }
+        ps2_ports.port_2_populated = true;  
+    }
+
+    //  Identify connected devices.
+    if (ps2_ports.port_1_populated)
+    {
+        ps2_identify_device(PS2_PORT_1, &ps2_ports.device_id_port_1);
+        // TODO: Check the device type and init a driver (whenever I have a driver lol).
+    }
+    if (ps2_ports.port_1_populated)
+    {
+        ps2_identify_device(PS2_PORT_2, &ps2_ports.device_id_port_2);
+        // TODO: Check the device type and init a driver (whenever I have a driver lol).
     }
 
     printf("PS/2: Controller initialized.\n");
