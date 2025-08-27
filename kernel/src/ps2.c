@@ -121,7 +121,7 @@ struct ps2_device_status ps2_ports = {false, 0, false, 0};
 
     @returns True if buffer is full, otherwise false.
 */
-static inline bool output_buffer_full()
+static inline bool ps2_output_buffer_full()
 {
     return port_read_byte(PS2_STATUS) & 1;
 }
@@ -131,7 +131,7 @@ static inline bool output_buffer_full()
 
     @returns True if buffer is full, otherwise false.
 */
-static inline bool input_buffer_full()
+static inline bool ps2_input_buffer_full()
 {
     return port_read_byte(PS2_STATUS) & (1 << 1);
 }
@@ -143,7 +143,7 @@ static inline bool input_buffer_full()
 */
 static void ps2_send_command(uint8_t command)
 {
-    while (input_buffer_full())
+    while (ps2_input_buffer_full())
         ;
 
     port_write_byte(PS2_COMMAND, command);
@@ -154,7 +154,7 @@ static void ps2_send_command(uint8_t command)
 */
 static void ps2_flush_output_buffer(void)
 {
-    while (output_buffer_full())
+    while (ps2_output_buffer_full())
     {
         port_read_byte(PS2_DATA); // Discard data that was read.
     }
@@ -181,7 +181,7 @@ uint8_t ps2_send_byte(uint8_t port, uint8_t data)
     }
 
     // Wait until data can be sent.
-    while (input_buffer_full())
+    while (ps2_input_buffer_full())
     {
         timeout = timeout - 1;
         if (timeout == 0) // Waiting took too long, so I assume something went wrong and we can give up.
@@ -210,7 +210,7 @@ uint8_t ps2_receive_byte(uint8_t *dest)
     unsigned int timeout = PS2_TIMEOUT;
 
     // Wait until there is data to read.
-    while (output_buffer_full() == 0)
+    while (ps2_output_buffer_full() == 0)
     {
         timeout = timeout - 1;
         if (timeout == 0) // Waiting for data took too long, so I assume something went wrong and we can give up.
