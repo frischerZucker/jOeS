@@ -17,7 +17,8 @@
 // For how many iterations sending and receiving data via the PS/2 port is tried until we give up.
 #define PS2_TIMEOUT 100000
 
-// Device types and there responses to an identify command. This list isn't complete. 
+// Device types and there responses to an identify command. This list isn't complete.
+// If you add more device types, remember to update ps2_device_is_keyboard() and ps2_device_is_mouse()!  
 enum ps2_device_types
 {
     PS2_KBD_AT = 0x01ffff, // There is no response for this device type.
@@ -134,6 +135,56 @@ static inline bool ps2_output_buffer_full()
 static inline bool ps2_input_buffer_full()
 {
     return port_read_byte(PS2_STATUS) & (1 << 1);
+}
+
+/*
+    Checks if the device type corresponds to a keyboard.
+
+    Compares the device type to all known keyboards.
+    
+    @param device_type Device type identifier (response to an identify command).
+    @returns True if the device type matches one of the known keyboards, false if not.
+*/
+static inline bool ps2_device_is_keyboard(int32_t device_type)
+{
+    switch (device_type)
+    {
+    // Add all keyboard types here.
+    case PS2_KBD_AT:
+    case PS2_KBD_MF2_1:
+    case PS2_KBD_MF2_2:
+        return true;
+        break;
+    // The device was no (known) keyboard so false is returned.
+    default:
+        return false;
+        break;
+    }
+}
+
+/*
+    Checks if the device type corresponds to a mouse.
+
+    Compares the device type to all known mice.
+    
+    @param device_type Device type identifier (response to an identify command).
+    @returns True if the device type matches one of the known mice, false if not.
+*/
+static inline bool ps2_device_is_mouse(int32_t device_type)
+{
+    switch (device_type)
+    {
+    // Add all mouse types here.
+    case PS2_MOUSE_STANDARD:
+    case PS2_MOUSE_SCROLL_WHEEL:
+    case PS2_MOUSE_5_BUTTONS:
+        return true;
+        break;
+    // The device was no (known) mouse so false is returned.
+    default:
+        return false;
+        break;
+    }
 }
 
 /*
@@ -270,10 +321,10 @@ uint8_t ps2_reset_device(uint8_t port)
     Side effect: Disables scanning for the device.
 
     @param port Specifies at which PS/2 port the device to identify is connected.
-    @param device_id Pointer to a variable where the devices id is stored.
+    @param device_type Pointer to a variable where the devices id is stored.
     @returns PS2_ERROR_NO_ACK or PS2_ERROR_TIMEOUT if something went wrong, otherwise PS2_OK.
 */
-uint8_t ps2_identify_device(uint8_t port, int32_t *device_id)
+uint8_t ps2_identify_device(uint8_t port, int32_t *device_type)
 {
 
     // Read and discard data from the PS/2 port that was there before we started the identification.
@@ -307,18 +358,20 @@ uint8_t ps2_identify_device(uint8_t port, int32_t *device_id)
     }
 
     // If no response arrives, it's an ancient AT keyboard.
-    // Set a device_id for this one as default and overwrite it if there is a response.
-    *device_id = PS2_KBD_AT;    
+    // Set a device_type for this one as default and overwrite it if there is a response.
+    *device_type = PS2_KBD_AT;    
     // Read up to two bytes as response.
     if (ps2_receive_byte(&response) == PS2_OK)
     {
-        *device_id = (response << 8);
+        *device_type = (response << 8);
         // Wait for a second byte that may be a part of the response.
         if (ps2_receive_byte(&response) == PS2_OK)
         {
-            *device_id = *device_id | response;
+            *device_type = *device_type | response;
         }
     }
+
+    printf("PS/2: Device at port %d: %d (%s).\n", port, *device_type, (ps2_device_is_keyboard(*device_type) ? "kbd" : "mouse"));
 
     // Restore the old config byte. Enables translation if it was turned off earlier.
     ps2_send_command(PS2_CMD_WRITE_CONFIG_BYTE);
@@ -499,12 +552,12 @@ uint8_t ps2_init_controller(void)
     //  Identify connected devices.
     if (ps2_ports.port_1_populated)
     {
-        ps2_identify_device(PS2_PORT_1, &ps2_ports.device_id_port_1);
+        ps2_identify_device(PS2_PORT_1, &ps2_ports.device_type_port_1);
         // TODO: Check the device type and init a driver (whenever I have a driver lol).
     }
     if (ps2_ports.port_1_populated)
     {
-        ps2_identify_device(PS2_PORT_2, &ps2_ports.device_id_port_2);
+        ps2_identify_device(PS2_PORT_2, &ps2_ports.device_type_port_2);
         // TODO: Check the device type and init a driver (whenever I have a driver lol).
     }
 

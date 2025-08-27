@@ -87,7 +87,5 @@ void kmain(void)
     
     ps2_init_controller();
 
-    printf("Connected PS/2 devices:\n - port1: %d\n - port2: %d\n", ps2_ports.device_id_port_1, ps2_ports.device_id_port_2);
-
     hcf();
 }
