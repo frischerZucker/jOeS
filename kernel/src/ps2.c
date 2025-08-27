@@ -14,10 +14,6 @@
 // Use this as port for sending command data via ps2_send_byte().
 #define PS2_PORT_CMD 0
 
-// Checks the status byte if the buffers are full,
-#define OUTPUT_BUFFER_FULL(status_byte) (status_byte & 1)
-#define INPUT_BUFFER_FULL(status_byte) (status_byte & (1 << 1))
-
 // Command to send to a device to reset it.
 #define PS2_RESET_DEVICE 0xff
 
@@ -101,13 +97,33 @@ static bool ps2_port_1_works = false;
 static bool ps2_port_2_works = false;
 
 /*
+    Checks if the controllers output buffer (incoming data) is full.
+
+    @returns True if buffer is full, otherwise false.
+*/
+static inline bool output_buffer_full()
+{
+    return port_read_byte(PS2_STATUS) & 1;
+}
+
+/*
+    Checks if the controllers input buffer (data to be sent) is full.
+
+    @returns True if buffer is full, otherwise false.
+*/
+static inline bool input_buffer_full()
+{
+    return port_read_byte(PS2_STATUS) & (1 << 1);
+}
+
+/*
     Sends a command to the PS/2 controller.
 
     @param command Command to send to the controller.
 */
 static void ps2_send_command(uint8_t command)
 {
-    while (INPUT_BUFFER_FULL(port_read_byte(PS2_STATUS)))
+    while (input_buffer_full())
         ;
 
     port_write_byte(PS2_COMMAND, command);
@@ -118,7 +134,7 @@ static void ps2_send_command(uint8_t command)
 */
 static void ps2_flush_output_buffer(void)
 {
-    while (OUTPUT_BUFFER_FULL(port_read_byte(PS2_STATUS)))
+    while (output_buffer_full())
     {
         port_read_byte(PS2_DATA); // Discard data that was read.
     }
@@ -145,7 +161,7 @@ uint8_t ps2_send_byte(uint8_t port, uint8_t data)
     }
 
     // Wait until data can be sent.
-    while (INPUT_BUFFER_FULL(port_read_byte(PS2_STATUS)))
+    while (input_buffer_full())
     {
         timeout = timeout - 1;
         if (timeout == 0) // Waiting took too long, so I assume something went wrong and we can give up.
@@ -174,7 +190,7 @@ uint8_t ps2_receive_byte(uint8_t *dest)
     unsigned int timeout = PS2_TIMEOUT;
 
     // Wait until there is data to read. 
-    while (OUTPUT_BUFFER_FULL(port_read_byte(PS2_STATUS)) == 0)
+    while (output_buffer_full() == 0)
     {
         timeout = timeout - 1;
         if (timeout == 0) // Waiting for data took too long, so I assume something went wrong and we can give up.
