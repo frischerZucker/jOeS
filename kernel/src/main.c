@@ -80,12 +80,15 @@ void kmain(void)
     }
 
     serial_print_line(COM1, "If you can see this, sending strings via serial works! :D\n");
-
-    // char buffer[32];
-    // serial_read_line(COM1, buffer, 32);
-    // printf("%s", buffer);
     
     ps2_init_controller();
+
+    int test = 0;
+    printf("int: %d %i, uint: %u %u %u\n", -1, 100, 100, -678, UINT_MAX);
+    printf("oct: %o %o %o, hex: %x %x %x\n", 1, 8, 32, 1, 32, 255);
+    printf("pointer: %p %p\n", &idt, &framebuffer);
+    printf("abcdef%n\n", &test);
+    printf("%d", test);
 
     hcf();
 }

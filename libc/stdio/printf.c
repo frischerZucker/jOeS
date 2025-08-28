@@ -6,8 +6,7 @@
 #include "string.h"
 #include "terminal.h"
 
-// Maximum characters needed to represent an int.
-#define INT_MAX_CHARS 12
+#define MAX_FORMAT_STRING_LENGTH 256
 
 #define STATE_NORMAL 0
 #define STATE_FORMAT 1
@@ -17,6 +16,11 @@
 #define FORMAT_CHAR 'c'
 #define FORMAT_INT1 'd'
 #define FORMAT_INT2 'i'
+#define FORMAT_UINT 'u'
+#define FORMAT_OCTAL 'o'
+#define FORMAT_HEX 'x'
+#define FORMAT_POINTER 'p'
+#define FORMAT_NO_OUTPUT 'n'
 
 /*
     Writes a string to the terminal and substitutes format specifiers (%...) with variables.
@@ -41,6 +45,12 @@ size_t printf(char *str, ...)
     size_t len = strlen(str);
 
     uint8_t state = 0;
+
+    char format_string[MAX_FORMAT_STRING_LENGTH];
+    size_t format_string_len = 0;
+
+    int format_number;
+    unsigned int unsigned_format_number;
 
     for (size_t i = 0; i < len; i++)
     {
@@ -88,19 +98,82 @@ size_t printf(char *str, ...)
             // Convert an integer to a string and print it.
             case FORMAT_INT1:
             case FORMAT_INT2:
-                int number = va_arg(list, int);
-                char temp[INT_MAX_CHARS];
+                format_number = va_arg(list, int);
                 
-                itoa(number, temp, 10);
+                itoa(format_number, format_string, 10);
 
-                size_t temp_len = strlen(temp);
+                format_string_len = strlen(format_string);
 
-                terminal_write_string(temp, temp_len);
-                written = written + temp_len;
+                terminal_write_string(format_string, format_string_len);
+                written = written + format_string_len;
 
                 state = STATE_NORMAL;
                 break;
+            
+            // Convert an unsigned integer to a string and print it.
+            case FORMAT_UINT:
+                unsigned_format_number = va_arg(list, unsigned int);
+            
+                utoa(unsigned_format_number, format_string, 10);
 
+                format_string_len = strlen(format_string);
+
+                terminal_write_string(format_string, format_string_len);
+                written = written + format_string_len;
+
+                state = STATE_NORMAL;
+                break;
+            
+            // Convert an unsigned integer to a string in base 8 and print it.
+            case FORMAT_OCTAL:
+                unsigned_format_number = va_arg(list, unsigned int);
+            
+                utoa(unsigned_format_number, format_string, 8);
+
+                format_string_len = strlen(format_string);
+
+                terminal_write_string(format_string, format_string_len);
+                written = written + format_string_len;
+
+                state = STATE_NORMAL;
+                break;
+            
+            // Convert an unsigned integer to a string in base 16 and print it.
+            case FORMAT_HEX:
+                unsigned_format_number = va_arg(list, unsigned int);
+            
+                utoa(unsigned_format_number, format_string, 16);
+
+                format_string_len = strlen(format_string);
+
+                terminal_write_string(format_string, format_string_len);
+                written = written + format_string_len;
+
+                state = STATE_NORMAL;
+                break;
+            
+            // Print a pointer as a base 16 integer.
+            case FORMAT_POINTER:
+                void *format_pointer = va_arg(list, void *);
+                
+                utoa((unsigned long)format_pointer, format_string, 16);
+
+                format_string_len = strlen(format_string);
+
+                terminal_write_string("0x", 2);
+                terminal_write_string(format_string, format_string_len);
+                written = written + format_string_len;
+
+                state = STATE_NORMAL;
+                break;
+            
+            case FORMAT_NO_OUTPUT:
+                int *output_pointer = va_arg(list, int *);
+
+                *output_pointer = written;
+                state = STATE_NORMAL;
+                break;
+                
             default:
                 return -1;
                 break;
