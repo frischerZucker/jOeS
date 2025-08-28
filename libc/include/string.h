@@ -12,6 +12,7 @@ size_t strlen(const char *str);
 
 // Non-standard functions
 void strrev(char * str);
-void itoa(int number, char *str, int base);
+void itoa(long number, char *str, int base);
+void utoa(unsigned long number, char *str, int base);
 
 #endif // STRING_H

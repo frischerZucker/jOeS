@@ -55,6 +55,7 @@ string/memmove.o \
 string/memset.o \
 string/strlen.o \
 string/itoa.o \
+string/utoa.o \
 string/strrev.o \
 stdio/printf.o \
 
