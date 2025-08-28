@@ -2,8 +2,10 @@
 
 # Sets some variables needed for the other scripts.
 
-# Change to your toolchains location.
-export PATH="$HOME/opt/cross/bin:$PATH"
+# Add the cross compiler to PATH.
+export PATH="$HOME/opt/cross/bin:$PATH" # Change to your toolchains location.
+
+export TOOLCHAIN_PREFIX=x86_64-elf-
 
 # Get the absolute path to this script. 
 export SCRIPT_LOCATION=$(cd -- $(dirname -- "${BASH_SOURCE[0]}"); pwd)

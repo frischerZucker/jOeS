@@ -15,7 +15,7 @@ cd $PROJECT_ROOT_DIR
 cd libc
 
 # Check if libc needs to be rebuild.
-make -q TOOLCHAIN_PREFIX=x86_64-elf-
+make -q TOOLCHAIN_PREFIX=$TOOLCHAIN_PREFIX
 
 if [ $? == 0 ]; then
     echo libc is already up to date.

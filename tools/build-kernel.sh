@@ -13,7 +13,7 @@ cd $PROJECT_ROOT_DIR
 
 # Call the kernels GNUmakefile to build it.
 cd kernel
-make TOOLCHAIN_PREFIX=x86_64-elf-
+make TOOLCHAIN_PREFIX=$TOOLCHAIN_PREFIX
 if [ $? != 0 ]; then
     echo "ERROR: Building the kernel failed!"
     exit 1
