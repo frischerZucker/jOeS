@@ -33,9 +33,17 @@
     Supported format specifiers are:
     - %d signed integer
     - %i signed integer
+    - %u unsigned integer
+    - %o octal integer
+    - %x hexadecimal integer
+    - %p pointer (hexadecimal)
     - %c char
-    - %s string.
-    - %% Prints a '%'.
+    - %s string
+    - %n return number of written characters
+    - %% prints a '%'
+    Supported flags are:
+    - '+' prefix positive numbers with '+'
+    - ' ' prefix positive numbers with ' '
 
     @param str String to print.
     @param ... Optional variables to substitute format specifiers with.
@@ -183,6 +191,7 @@ size_t printf(char *str, ...)
                 state = STATE_NORMAL;
                 break;
             
+            // Returns the number of written characters so far into the variable pointed to by output_pointer.
             case FORMAT_NO_OUTPUT:
                 int *output_pointer = va_arg(list, int *);
 
