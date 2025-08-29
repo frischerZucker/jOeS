@@ -1,6 +1,7 @@
 #include "stdio.h"
 
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "string.h"
@@ -21,6 +22,10 @@
 #define FORMAT_HEX 'x'
 #define FORMAT_POINTER 'p'
 #define FORMAT_NO_OUTPUT 'n'
+#define FORMAT_PREFIX_PLUS '+' // Prefix positive numbers with '+'.
+#define FORMAT_PREFIX_SPACE ' ' // Prefix positive numbers with ' '.
+
+#define NO_PREFIX '\0' // Value for pos_number_prefix if no prefix should be printed.
 
 /*
     Writes a string to the terminal and substitutes format specifiers (%...) with variables.
@@ -46,6 +51,8 @@ size_t printf(char *str, ...)
 
     uint8_t state = 0;
 
+    char pos_number_prefix = NO_PREFIX; // Prefix to add to positive numbers.
+
     char format_string[MAX_FORMAT_STRING_LENGTH];
     size_t format_string_len = 0;
 
@@ -61,6 +68,7 @@ size_t printf(char *str, ...)
             if (str[i] == FORMAT_SPECIFIER)
             {
                 state = STATE_FORMAT;
+                pos_number_prefix = NO_PREFIX;
             }
             else
             {
@@ -104,6 +112,13 @@ size_t printf(char *str, ...)
 
                 format_string_len = strlen(format_string);
 
+                // Add a trailing ' ' or '+' to positive numbers if needed.
+                if (pos_number_prefix != '\0' && format_number >= 0)
+                {
+                    terminal_put_char(pos_number_prefix);
+                    written = written + 1;
+                }
+
                 terminal_write_string(format_string, format_string_len);
                 written = written + format_string_len;
 
@@ -118,8 +133,9 @@ size_t printf(char *str, ...)
 
                 format_string_len = strlen(format_string);
 
+                terminal_put_char(pos_number_prefix); // Add a trailing ' ' or '+' if needed.
                 terminal_write_string(format_string, format_string_len);
-                written = written + format_string_len;
+                written = written + format_string_len + 1;
 
                 state = STATE_NORMAL;
                 break;
@@ -172,6 +188,16 @@ size_t printf(char *str, ...)
 
                 *output_pointer = written;
                 state = STATE_NORMAL;
+                break;
+
+            // Prefix positive numbers with '+'.
+            case FORMAT_PREFIX_PLUS:
+                pos_number_prefix = '+';
+                break;
+
+            // Prefix positive numbers with ' '.
+            case FORMAT_PREFIX_SPACE:
+                pos_number_prefix = ' ';
                 break;
                 
             default:
