@@ -4,6 +4,7 @@
 #include "stdio.h"
 
 #include "port_io.h"
+#include "ps2_keyboard.h"
 #include "serial.h"
 
 // Adresses of the IO ports used by the PS/2 controller.
@@ -371,7 +372,7 @@ uint8_t ps2_identify_device(uint8_t port, int32_t *device_type)
         }
     }
 
-    printf("PS/2: Device at port %d: %d (%s).\n", port, *device_type, (ps2_device_is_keyboard(*device_type) ? "kbd" : "mouse"));
+    printf("PS/2: Device at port %d: %x (%s).\n", port, *device_type, (ps2_device_is_keyboard(*device_type) ? "kbd" : "mouse"));
 
     // Restore the old config byte. Enables translation if it was turned off earlier.
     ps2_send_command(PS2_CMD_WRITE_CONFIG_BYTE);
@@ -553,12 +554,26 @@ uint8_t ps2_init_controller(void)
     if (ps2_ports.port_1_populated)
     {
         ps2_identify_device(PS2_PORT_1, &ps2_ports.device_type_port_1);
-        // TODO: Check the device type and init a driver (whenever I have a driver lol).
+        if (ps2_device_is_keyboard(ps2_ports.device_type_port_1))
+        {
+            ps2_kbd_init(PS2_PORT_1);
+        }
+        else if (ps2_device_is_mouse(ps2_ports.device_type_port_1))
+        {
+            printf("PS/2: There is no mouse driver yet :(\n");
+        }
     }
     if (ps2_ports.port_1_populated)
     {
         ps2_identify_device(PS2_PORT_2, &ps2_ports.device_type_port_2);
-        // TODO: Check the device type and init a driver (whenever I have a driver lol).
+        if (ps2_device_is_keyboard(ps2_ports.device_type_port_2))
+        {
+            ps2_kbd_init(PS2_PORT_1);
+        }
+        else if (ps2_device_is_mouse(ps2_ports.device_type_port_2))
+        {
+            printf("PS/2: There is no mouse driver yet :(\n");
+        }
     }
 
     printf("PS/2: Controller initialized.\n");
