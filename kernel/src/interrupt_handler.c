@@ -4,7 +4,7 @@
 
 #include "hcf.h"
 #include "pic.h"
-#include "port_io.h"
+#include "ps2_keyboard.h"
 
 /*
     Handles CPU exceptions and interrupts.
@@ -70,7 +70,7 @@ void interrupt_handler(struct interrupt_stack_frame *stack)
         pic_send_eoi(0);
         break;
     case INT_EXT_INT1:
-        printf("EXT1\n");
+        ps2_kbd_irq_callback();
         pic_send_eoi(1);
         break;
     case INT_EXT_INT2:
