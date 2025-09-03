@@ -140,7 +140,11 @@ typedef enum key_codes
     KEY_MULTIMEDIA_WWW_BACK,
     KEY_MULTIMEDIA_MY_COMPUTER,
     KEY_MULTIMEDIA_EMAIL,
-    KEY_MULTIMEDIA_MEDIA_SELECT
+    KEY_MULTIMEDIA_MEDIA_SELECT,
+    // ACPI keys.
+    KEY_POWER,
+    KEY_SLEEP,
+    KEY_WAKE
 } key_code_t;
 
 typedef enum key_event_types
@@ -152,8 +156,8 @@ typedef enum key_event_types
 
 struct key_event
 {
-    uint8_t scancode;
-    bool pressed;
+    key_code_t keycode;
+    key_event_type_t pressed;
     bool shift;
     bool caps_lock;
     bool alt;
