@@ -189,7 +189,7 @@ static key_code_t mapping_scancode_set_1_to_keycode[256] =
     @param scancode_set Scan code set the scan code is from.
     @returns A key code, KEY_UNKNOWN if an unknown scan code set was requested.
 */
-static inline key_code_t scancode_to_keycode(uint8_t scancode, ps2_kbd_state_t state, ps2_kbd_scancode_set_t scancode_set)
+static inline key_code_t ps2_kbd_scancode_to_keycode(uint8_t scancode, ps2_kbd_state_t state, ps2_kbd_scancode_set_t scancode_set)
 {
     switch (scancode_set)
     {
@@ -521,7 +521,7 @@ void ps2_kbd_irq_callback(void)
         key_event.pressed = KEY_EVENT_TYPE_RELEASED;
     }
 
-    key_event.keycode = scancode_to_keycode(scancode_raw, ps2_kbd_state, PS2_KBD_SCANCODE_SET_1);
+    key_event.keycode = ps2_kbd_scancode_to_keycode(scancode_raw, ps2_kbd_state, PS2_KBD_SCANCODE_SET_1);
 
     ps2_kbd_set_modifiers(&key_event); // Set of clear modifier flags.
 
