@@ -154,14 +154,21 @@ typedef enum key_event_types
     KEY_EVENT_TYPE_RELEASED
 } key_event_type_t;
 
+#define KBD_MODIFIER_MASK_SHIFT (1 << 0)
+#define KBD_MODIFIER_MASK_CAPS_LOCK (1 << 1)
+#define KBD_MODIFIER_MASK_ALT (1 << 2)
+#define KBD_MODIFIER_MASK_ALTGR (1 << 3)
+#define KBD_MODIFIER_MASK_STRG (1 << 4)
+#define KBD_MODIFIER_MASK_NUM_LOCK (1 << 5)
+#define KBD_MODIFIER_MASK_SCROLL_LOCK (1 << 6)
+#define KBD_MODIFIER_MASK_LSUPER (1 << 7)
+#define KBD_MODIFIER_MASK_RSUPER (1 << 8)
+
 struct key_event_t
 {
     key_code_t keycode;
     key_event_type_t pressed;
-    bool shift;
-    bool caps_lock;
-    bool alt;
-    bool alt_gr;
+    uint16_t modifiers;
 };
 
 #endif // KEYBOARD_H

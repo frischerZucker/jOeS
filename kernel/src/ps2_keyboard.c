@@ -213,6 +213,79 @@ static inline key_code_t scancode_to_keycode(uint8_t scancode, ps2_kbd_state_t s
 }
 
 /*
+    Sets the modifier flags for a key event.
+
+    Sets and clears modifier flags (shift, caps lock, alt, altgr, strg, left super and right super) for a key event.
+
+    TODO: 
+    If any of both strg or shift keys is released, it's modifier flag is cleared.
+    In case both keys are pressed simoultanously, this shouldn't happen until the last one is released.
+
+    @param key_event Key event for which the modifiers should be set.
+*/
+static inline void ps2_kbd_set_modifiers(struct key_event_t *key_event)
+{
+    // Stores the modifiers of the last run. This is needed to toggle caps lock.
+    static uint16_t modifiers_old = 0;
+
+    uint16_t mask = 0;
+
+    switch (key_event->keycode)
+    {
+    case KEY_CAPS_LOCK:
+        // For caps lock the modifier is switched every time the key is pressed.
+        if (key_event->pressed == KEY_EVENT_TYPE_PRESSED)
+        {
+            modifiers_old = modifiers_old ^ KBD_MODIFIER_MASK_CAPS_LOCK;
+        }
+        key_event->modifiers = modifiers_old;
+        // The setting / clearing of the modifier flag all the other keys use isn't needed, so we return early.
+        return;
+
+    case KEY_LSHIFT:
+    case KEY_RSHIFT:
+        mask = KBD_MODIFIER_MASK_SHIFT;
+        break;
+    
+    case KEY_ALT:
+        mask = KBD_MODIFIER_MASK_ALT;
+        break;
+    
+    case KEY_ALTGR:
+        mask = KBD_MODIFIER_MASK_ALTGR;
+        break;
+    
+    case KEY_LSTRG:
+    case KEY_RSTRG:
+        mask = KBD_MODIFIER_MASK_STRG;
+        break;
+
+    case KEY_LSUPER:
+        mask = KBD_MODIFIER_MASK_LSUPER;
+        break;
+    
+    case KEY_RSUPER:
+        mask = KBD_MODIFIER_MASK_RSUPER;
+        break;
+
+    default:
+        break;
+    }
+
+    // Set the modifier flag for the duration the key is pressed.
+    if (key_event->pressed == KEY_EVENT_TYPE_PRESSED)
+    {
+        modifiers_old = modifiers_old | mask;
+    }
+    else
+    {
+        modifiers_old = modifiers_old & ~mask;
+    }
+
+    key_event->modifiers = modifiers_old;
+}
+
+/*
     Selects a scancode set.
 
     Selects what scancode set the keyboard should use.
@@ -276,21 +349,17 @@ void ps2_kbd_irq_callback(void)
     uint8_t scancode_raw = 0;
     ps2_receive_byte(&scancode_raw);
 
-    printf("PS/2 KBD: Scancode = %x. State = %x\n", scancode_raw, ps2_kbd_state);
-
     // Logic for switching states.
     switch (ps2_kbd_state)
     {
     case PS2_KBD_STATE_NORMAL:
         if (scancode_raw == 0xe0)
         {
-            printf("PS/2 KBD: Switching to state %d.\n", PS2_KBD_STATE_PREFIX_E0);
             ps2_kbd_state = PS2_KBD_STATE_PREFIX_E0;
             return;
         }
         else if (scancode_raw == 0xe1)
         {
-            printf("PS/2 KBD: Switching to state %d.\n", PS2_KBD_STATE_PREFIX_E1);
             ps2_kbd_state = PS2_KBD_STATE_PREFIX_E1;
             return;
         }
@@ -300,13 +369,11 @@ void ps2_kbd_irq_callback(void)
     case PS2_KBD_STATE_PREFIX_E0:
         if (scancode_raw == 0x2a)
         {
-            printf("PS/2 KBD: Switching to state %d.\n", PS2_KBD_STATE_PREFIX_E02A);
             ps2_kbd_state = PS2_KBD_STATE_PREFIX_E02A;
             return;
         }
         else if (scancode_raw == 0xb7)
         {
-            printf("PS/2 KBD: Switching to state %d.\n", PS2_KBD_STATE_PREFIX_E0B7);
             ps2_kbd_state = PS2_KBD_STATE_PREFIX_E0B7;
             return;
         }
@@ -316,13 +383,11 @@ void ps2_kbd_irq_callback(void)
     case PS2_KBD_STATE_PREFIX_E02A:
         if (scancode_raw == 0xe0)
         {
-            printf("PS/2 KBD: Switching to state %d.\n", PS2_KBD_STATE_PREFIX_E02AE0);
             ps2_kbd_state = PS2_KBD_STATE_PREFIX_E02AE0;
             return;
         }
         else
         {
-            printf("PS/2 KBD: Invalid byte. Switching to state %d.\n", PS2_KBD_STATE_INVALID);
             ps2_kbd_state = PS2_KBD_STATE_INVALID;
             return;
         }
@@ -332,7 +397,6 @@ void ps2_kbd_irq_callback(void)
     case PS2_KBD_STATE_PREFIX_E02AE0:
         if (scancode_raw != 0x37)
         {
-            printf("PS/2 KBD: Invalid byte. Switching to state %d.\n", PS2_KBD_STATE_NORMAL);
             ps2_kbd_state = PS2_KBD_STATE_NORMAL;
             return;
         }
@@ -342,13 +406,11 @@ void ps2_kbd_irq_callback(void)
     case PS2_KBD_STATE_PREFIX_E0B7:
         if (scancode_raw == 0xe0)
         {
-            printf("PS/2 KBD: Switching to state %d.\n", PS2_KBD_STATE_PREFIX_E02AE0);
             ps2_kbd_state = PS2_KBD_STATE_PREFIX_E02AE0;
             return;
         }
         else
         {
-            printf("PS/2 KBD: Invalid byte. Switching to state %d.\n", PS2_KBD_STATE_INVALID);
             ps2_kbd_state = PS2_KBD_STATE_INVALID;
             return;
         }
@@ -358,7 +420,6 @@ void ps2_kbd_irq_callback(void)
     case PS2_KBD_STATE_PREFIX_E0B7E0:
         if (scancode_raw != 0xaa)
         {
-            printf("PS/2 KBD: Invalid byte. Switching to state %d.\n", PS2_KBD_STATE_NORMAL);
             ps2_kbd_state = PS2_KBD_STATE_NORMAL;
             return;
         }
@@ -368,13 +429,11 @@ void ps2_kbd_irq_callback(void)
     case PS2_KBD_STATE_PREFIX_E1:
         if (scancode_raw == 0x1d)
         {
-            printf("PS/2 KBD: Switching to state %d.\n", PS2_KBD_STATE_PREFIX_E11D);
             ps2_kbd_state = PS2_KBD_STATE_PREFIX_E11D;
             return;
         }
         else
         {
-            printf("PS/2 KBD: Invalid byte. Switching to state %d.\n", PS2_KBD_STATE_INVALID);
             ps2_kbd_state = PS2_KBD_STATE_INVALID;
             return;
         }
@@ -384,13 +443,11 @@ void ps2_kbd_irq_callback(void)
     case PS2_KBD_STATE_PREFIX_E11D:
         if (scancode_raw == 0x45)
         {
-            printf("PS/2 KBD: Switching to state %d.\n", PS2_KBD_STATE_PREFIX_E11D45);
             ps2_kbd_state = PS2_KBD_STATE_PREFIX_E11D45;
             return;
         }
         else
         {
-            printf("PS/2 KBD: Invalid byte. Switching to state %d.\n", PS2_KBD_STATE_INVALID);
             ps2_kbd_state = PS2_KBD_STATE_INVALID;
             return;
         }
@@ -400,13 +457,11 @@ void ps2_kbd_irq_callback(void)
     case PS2_KBD_STATE_PREFIX_E11D45:
         if (scancode_raw == 0xe1)
         {
-            printf("PS/2 KBD: Switching to state %d.\n", PS2_KBD_STATE_PREFIX_E11D45E1);
             ps2_kbd_state = PS2_KBD_STATE_PREFIX_E11D45E1;
             return;
         }
         else
         {
-            printf("PS/2 KBD: Invalid byte. Switching to state %d.\n", PS2_KBD_STATE_INVALID);
             ps2_kbd_state = PS2_KBD_STATE_INVALID;
             return;
         }
@@ -416,13 +471,11 @@ void ps2_kbd_irq_callback(void)
     case PS2_KBD_STATE_PREFIX_E11D45E1:
         if (scancode_raw == 0x9d)
         {
-            printf("PS/2 KBD: Switching to state %d.\n", PS2_KBD_STATE_PREFIX_E11D45E19D);
             ps2_kbd_state = PS2_KBD_STATE_PREFIX_E11D45E19D;
             return;
         }
         else
         {
-            printf("PS/2 KBD: Invalid byte. Switching to state %d.\n", PS2_KBD_STATE_INVALID);
             ps2_kbd_state = PS2_KBD_STATE_INVALID;
             return;
         }
@@ -432,7 +485,6 @@ void ps2_kbd_irq_callback(void)
     case PS2_KBD_STATE_PREFIX_E11D45E19D:
         if (scancode_raw != 0xc5)
         {
-            printf("PS/2 KBD: Invalid byte. Switching to state %d.\n", PS2_KBD_STATE_NORMAL);
             ps2_kbd_state = PS2_KBD_STATE_NORMAL;
             return;
         }
@@ -458,7 +510,7 @@ void ps2_kbd_irq_callback(void)
         It translates the raw scancode to a key event.
     */
 
-    struct key_event_t key_event;
+    struct key_event_t key_event = {0};
     // If the scancodes 7th bit is set the key was released, otherwise it was pressed.
     if ((scancode_raw & (1 << 7)) == 0)
     {
@@ -471,7 +523,9 @@ void ps2_kbd_irq_callback(void)
 
     key_event.keycode = scancode_to_keycode(scancode_raw, ps2_kbd_state, PS2_KBD_SCANCODE_SET_1);
 
-    printf("PS/2 KBD: Key: %d, Key event type: %d.\n", key_event.keycode, key_event.pressed);
+    ps2_kbd_set_modifiers(&key_event); // Set of clear modifier flags.
+
+    printf("PS/2 KBD: Key: %d, Key event type: %d, Modifiers: %d.\n", key_event.keycode, key_event.pressed, key_event.modifiers);
     // A full scan code was received, so we return back to the "normal" state.
     ps2_kbd_state = PS2_KBD_STATE_NORMAL;
 }
