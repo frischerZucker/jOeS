@@ -154,7 +154,7 @@ typedef enum key_event_types
     KEY_EVENT_TYPE_RELEASED
 } key_event_type_t;
 
-struct key_event
+struct key_event_t
 {
     key_code_t keycode;
     key_event_type_t pressed;

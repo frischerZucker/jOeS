@@ -37,6 +37,182 @@ typedef enum ps2_kbd_states
 static ps2_kbd_state_t ps2_kbd_state = PS2_KBD_STATE_UNINITIALIZED;
 
 /*
+    Disable warnings for overwriting already initialized values during array initialization.
+    First, I initialize the entire array with KEY_UNKNOWN and overwrite certain values with real key codes.
+    This overwriting would generate many unnecessary warnings, so I disable them for this initialization.
+*/
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Woverride-init"
+// Look up table to convert scan codes (scan code set 1) to key codes.
+static key_code_t mapping_scancode_set_1_to_keycode[256] =
+{
+    [0x00 ... 0xff] = KEY_UNKNOWN,
+
+    [0x01] = KEY_ESC,
+    [0x02] = KEY_1,
+    [0x03] = KEY_2,
+    [0x04] = KEY_3,
+    [0x05] = KEY_4,
+    [0x06] = KEY_5,
+    [0x07] = KEY_6,
+    [0x08] = KEY_7,
+    [0x09] = KEY_8,
+    [0x0a] = KEY_9,
+    [0x0b] = KEY_0,
+    [0x0c] = KEY_ß,
+    [0x0d] = KEY_BACK_TICK,
+    [0x0e] = KEY_BACKSPACE,
+    [0x0f] = KEY_TAB,
+    [0x10] = KEY_Q,
+    [0x11] = KEY_W,
+    [0x12] = KEY_E,
+    [0x13] = KEY_R,
+    [0x14] = KEY_T,
+    [0x15] = KEY_Z,
+    [0x16] = KEY_U,
+    [0x17] = KEY_I,
+    [0x18] = KEY_O,
+    [0x19] = KEY_P,
+    [0x1a] = KEY_Ü,
+    [0x1b] = KEY_PLUS,
+    [0x1c] = KEY_ENTER,
+    [0x1d] = KEY_LSTRG,
+    [0x1e] = KEY_A,
+    [0x1f] = KEY_S,
+    [0x20] = KEY_D,
+    [0x21] = KEY_F,
+    [0x22] = KEY_G,
+    [0x23] = KEY_H,
+    [0x24] = KEY_J,
+    [0x25] = KEY_K,
+    [0x26] = KEY_L,
+    [0x27] = KEY_Ö,
+    [0x28] = KEY_Ä,
+    [0x29] = KEY_HASHTAG,
+    [0x2a] = KEY_LSHIFT,
+    [0x2b] = KEY_LESS_THEN,
+    [0x2c] = KEY_Y,
+    [0x2d] = KEY_X,
+    [0x2e] = KEY_C,
+    [0x2f] = KEY_V,
+    [0x30] = KEY_B,
+    [0x31] = KEY_N,
+    [0x32] = KEY_M,
+    [0x33] = KEY_COMMA,
+    [0x34] = KEY_PERIOD,
+    [0x35] = KEY_MINUS,
+    [0x36] = KEY_RSHIFT,
+    [0x37] = KEY_KEYPAD_ASTERISK,
+    [0x38] = KEY_ALT,
+    [0x39] = KEY_SPACE,
+    [0x3a] = KEY_CAPS_LOCK,
+    [0x3b] = KEY_F1,
+    [0x3c] = KEY_F2,
+    [0x3d] = KEY_F3,
+    [0x3e] = KEY_F4,
+    [0x3f] = KEY_F5,
+    [0x40] = KEY_F6,
+    [0x41] = KEY_F7,
+    [0x42] = KEY_F8,
+    [0x43] = KEY_F9,
+    [0x44] = KEY_F10,
+    [0x45] = KEY_NUM_LOCK,
+    [0x46] = KEY_SCROLL_LOCK,
+    [0x47] = KEY_KEYPAD_7,
+    [0x48] = KEY_KEYPAD_8,
+    [0x49] = KEY_KEYPAD_9,
+    [0x4a] = KEY_KEYPAD_MINUS,
+    [0x4b] = KEY_KEYPAD_4,
+    [0x4c] = KEY_KEYPAD_5,
+    [0x4d] = KEY_KEYPAD_6,
+    [0x4e] = KEY_KEYPAD_PLUS,
+    [0x4f] = KEY_KEYPAD_1,
+    [0x50] = KEY_KEYPAD_2,
+    [0x51] = KEY_KEYPAD_3,
+    [0x52] = KEY_KEYPAD_0,
+    [0x53] = KEY_KEYPAD_DELETE,
+    [0x57] = KEY_F11,
+    [0x58] = KEY_F12,
+    [0x90] = KEY_MULTIMEDIA_PREVIOUS_TRACK,
+    [0x99] = KEY_MULTIMEDIA_NEXT_TRACK,
+    [0x9c] = KEY_KEYPAD_ENTER,
+    [0x9d] = KEY_RSTRG,
+    [0xa0] = KEY_MULTIMEDIA_MUTE,
+    [0xa1] = KEY_MULTIMEDIA_CALCULATOR,
+    [0xa2] = KEY_MULTIMEDIA_PLAY,
+    [0xa4] = KEY_MULTIMEDIA_STOP,
+    [0xae] = KEY_MULTIMEDIA_VOLUME_DOWN,
+    [0xb0] = KEY_MULTIMEDIA_VOLUME_UP,
+    [0xb2] = KEY_MULTIMEDIA_WWW_HOME,
+    [0xb5] = KEY_KEYPAD_SLASH,
+    [0xb8] = KEY_ALTGR,
+    [0xc7] = KEY_POS1,
+    [0xc8] = KEY_UP,
+    [0xc9] = KEY_PAGE_UP,
+    [0xcb] = KEY_LEFT,
+    [0xcd] = KEY_RIGHT,
+    [0xcf] = KEY_END,
+    [0xd0] = KEY_DOWN,
+    [0xd1] = KEY_PAGE_DOWN,
+    [0xd2] = KEY_INSERT,
+    [0xd3] = KEY_DEL,
+    [0xdb] = KEY_LSUPER,
+    [0xdc] = KEY_RSUPER,
+    [0xdd] = KEY_MENU,
+    [0xde] = KEY_POWER,
+    [0xdf] = KEY_SLEEP,
+    [0xe3] = KEY_WAKE,
+    [0xe5] = KEY_MULTIMEDIA_WWW_SEARCH,
+    [0xe6] = KEY_MULTIMEDIA_FAVORITES,
+    [0xe7] = KEY_MULTIMEDIA_WWW_REFRESH,
+    [0xe8] = KEY_MULTIMEDIA_WWW_STOP,
+    [0xe9] = KEY_MULTIMEDIA_WWW_FORWARD,
+    [0xea] = KEY_MULTIMEDIA_WWW_BACK,
+    [0xeb] = KEY_MULTIMEDIA_MY_COMPUTER,
+    [0xec] = KEY_MULTIMEDIA_EMAIL,
+    [0xed] = KEY_MULTIMEDIA_MEDIA_SELECT,
+    [0xb7] = KEY_PRINT_SCREEN,
+    [0xaa] = KEY_PRINT_SCREEN,
+    [0xc5] = KEY_PAUSE
+};
+// Enable "-Woverride-init" again.
+#pragma GCC diagnostic pop 
+
+/*
+    Translates scan codes to key codes.
+
+    Handles translation from raw scan codes to key codes.
+    For now only scan code set 1 is implemented.
+
+    @param scancode Scan code to translate.
+    @param state State the driver was in when the scan code was received.
+    @param scancode_set Scan code set the scan code is from.
+    @returns A key code, KEY_UNKNOWN if an unknown scan code set was requested.
+*/
+static inline key_code_t scancode_to_keycode(uint8_t scancode, ps2_kbd_state_t state, ps2_kbd_scancode_set_t scancode_set)
+{
+    switch (scancode_set)
+    {
+    case PS2_KBD_SCANCODE_SET_1:
+        // Remove pressed / released bit, so it can be used to distinguish keys with prefixed scan codes.
+        scancode = scancode & ~(1 << 7);
+        // Set the 7th bit if the scan code had a prefix. This ensures there are no collisions between keys.
+        if (state != PS2_KBD_STATE_NORMAL) 
+        {
+            scancode = scancode | (1 << 7);
+        }
+        // Get the correct key code for the scan code.
+        return mapping_scancode_set_1_to_keycode[scancode];
+        break;
+    
+    default:
+        printf("PS/2 KBD: Can't convert scancode. Scancode set %d is not implemented.\n", scancode_set);
+        return KEY_UNKNOWN;
+        break;
+    }
+}
+
+/*
     Selects a scancode set.
 
     Selects what scancode set the keyboard should use.
@@ -81,7 +257,7 @@ static ps2_kbd_error_codes_t ps2_kbd_set_scancode_set(uint8_t port, ps2_kbd_scan
 /*
     Receives scancodes (scancode set 1) from the keyboard and translates them to key events.
 
-    This function acts as a finite state machine. 
+    This function acts as a finite state machine.
     The incoming byte is read and depending on the current state actions are performed.
 
     These include:
@@ -90,13 +266,9 @@ static ps2_kbd_error_codes_t ps2_kbd_set_scancode_set(uint8_t port, ps2_kbd_scan
     - switching to an "invalid" state whenever unexpected bytes are received
     - switching back from "invalid" to "normal" state, when the last expected byte of scancodes with more then 2 bytes is received
 
-    It should be called from the interrupt handler's EXT_INT_1 case, as this interrupt is generated for every incoming byte. 
+    It should be called from the interrupt handler's EXT_INT_1 case, as this interrupt is generated for every incoming byte.
 
     TODO:
-    - Translate key, state & key event type to key events
-    -> I could use a LUT with 256 entries for (key+state)->key event translation.
-    -> Bit 7 is only used for deciding between pressed / released
-    -> I could set it if the state was a prefix state, to distinguish keys
     - Append keyevents to some sort of buffer
 */
 void ps2_kbd_irq_callback(void)
@@ -106,6 +278,7 @@ void ps2_kbd_irq_callback(void)
 
     printf("PS/2 KBD: Scancode = %x. State = %x\n", scancode_raw, ps2_kbd_state);
 
+    // Logic for switching states.
     switch (ps2_kbd_state)
     {
     case PS2_KBD_STATE_NORMAL:
@@ -123,7 +296,7 @@ void ps2_kbd_irq_callback(void)
         }
 
         break;
-        
+
     case PS2_KBD_STATE_PREFIX_E0:
         if (scancode_raw == 0x2a)
         {
@@ -139,7 +312,7 @@ void ps2_kbd_irq_callback(void)
         }
 
         break;
-    
+
     case PS2_KBD_STATE_PREFIX_E02A:
         if (scancode_raw == 0xe0)
         {
@@ -155,7 +328,7 @@ void ps2_kbd_irq_callback(void)
         }
 
         break;
-        
+
     case PS2_KBD_STATE_PREFIX_E02AE0:
         if (scancode_raw != 0x37)
         {
@@ -165,7 +338,7 @@ void ps2_kbd_irq_callback(void)
         }
 
         break;
-    
+
     case PS2_KBD_STATE_PREFIX_E0B7:
         if (scancode_raw == 0xe0)
         {
@@ -181,7 +354,7 @@ void ps2_kbd_irq_callback(void)
         }
 
         break;
-        
+
     case PS2_KBD_STATE_PREFIX_E0B7E0:
         if (scancode_raw != 0xaa)
         {
@@ -190,7 +363,7 @@ void ps2_kbd_irq_callback(void)
             return;
         }
 
-        break;  
+        break;
 
     case PS2_KBD_STATE_PREFIX_E1:
         if (scancode_raw == 0x1d)
@@ -264,7 +437,7 @@ void ps2_kbd_irq_callback(void)
             return;
         }
 
-        break;  
+        break;
 
     case PS2_KBD_STATE_INVALID:
         if (scancode_raw == 0x37 || scancode_raw == 0xaa || scancode_raw == 0xc5)
@@ -273,14 +446,33 @@ void ps2_kbd_irq_callback(void)
         }
         return;
 
-        break;            
-        
+        break;
+
     default:
         printf("PS/2 KBD: This state should not be reached.\n");
         break;
     }
 
-    printf("PS/2 KBD: Key: %d, State: %d, Key event type: %d.\n", scancode_raw & ~(1 << 7), ps2_kbd_state, (scancode_raw & (1 << 7)) > 1);
+    /*
+        This part of the code is only reached, when a full scancode was received.
+        It translates the raw scancode to a key event.
+    */
+
+    struct key_event_t key_event;
+    // If the scancodes 7th bit is set the key was released, otherwise it was pressed.
+    if ((scancode_raw & (1 << 7)) == 0)
+    {
+        key_event.pressed = KEY_EVENT_TYPE_PRESSED;
+    }
+    else
+    {
+        key_event.pressed = KEY_EVENT_TYPE_RELEASED;
+    }
+
+    key_event.keycode = scancode_to_keycode(scancode_raw, ps2_kbd_state, PS2_KBD_SCANCODE_SET_1);
+
+    printf("PS/2 KBD: Key: %d, Key event type: %d.\n", key_event.keycode, key_event.pressed);
+    // A full scan code was received, so we return back to the "normal" state.
     ps2_kbd_state = PS2_KBD_STATE_NORMAL;
 }
 
