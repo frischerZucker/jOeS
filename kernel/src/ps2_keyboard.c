@@ -230,49 +230,71 @@ static inline void ps2_kbd_set_modifiers(struct key_event_t *key_event)
 
     uint16_t mask = 0;
 
+    // Select the correct mask and go to the right code section to apply the mask.
     switch (key_event->keycode)
     {
     case KEY_CAPS_LOCK:
-        // For caps lock the modifier is switched every time the key is pressed.
-        if (key_event->pressed == KEY_EVENT_TYPE_PRESSED)
-        {
-            modifiers_old = modifiers_old ^ KBD_MODIFIER_MASK_CAPS_LOCK;
-        }
-        key_event->modifiers = modifiers_old;
-        // The setting / clearing of the modifier flag all the other keys use isn't needed, so we return early.
-        return;
+        mask = KBD_MODIFIER_MASK_CAPS_LOCK;
+        goto APPLY_TOGGLED_MODIFIERS_MASK;
+        break;
+
+    case KEY_NUM_LOCK:
+        mask = KBD_MODIFIER_MASK_NUM_LOCK;
+        goto APPLY_TOGGLED_MODIFIERS_MASK;
+        break;
+    
+    case KEY_SCROLL_LOCK:
+        mask = KBD_MODIFIER_MASK_SCROLL_LOCK;
+        goto APPLY_TOGGLED_MODIFIERS_MASK;
+        break;
 
     case KEY_LSHIFT:
     case KEY_RSHIFT:
         mask = KBD_MODIFIER_MASK_SHIFT;
+        goto APLY_PRESSED_RELEASED_MODIFIERS_MASK;
         break;
     
     case KEY_ALT:
         mask = KBD_MODIFIER_MASK_ALT;
+        goto APLY_PRESSED_RELEASED_MODIFIERS_MASK;
         break;
     
     case KEY_ALTGR:
         mask = KBD_MODIFIER_MASK_ALTGR;
+        goto APLY_PRESSED_RELEASED_MODIFIERS_MASK;
         break;
     
     case KEY_LSTRG:
     case KEY_RSTRG:
         mask = KBD_MODIFIER_MASK_STRG;
+        goto APLY_PRESSED_RELEASED_MODIFIERS_MASK;
         break;
 
     case KEY_LSUPER:
         mask = KBD_MODIFIER_MASK_LSUPER;
+        goto APLY_PRESSED_RELEASED_MODIFIERS_MASK;
         break;
     
     case KEY_RSUPER:
         mask = KBD_MODIFIER_MASK_RSUPER;
+        goto APLY_PRESSED_RELEASED_MODIFIERS_MASK;
         break;
 
     default:
         break;
     }
 
-    // Set the modifier flag for the duration the key is pressed.
+    // Toggle the masked modifier flag everytime the key is pressed.
+    APPLY_TOGGLED_MODIFIERS_MASK:
+    if (key_event->pressed == KEY_EVENT_TYPE_PRESSED)
+    {
+        modifiers_old = modifiers_old ^ mask;
+        key_event->modifiers = modifiers_old;
+    }
+    return;
+
+    // Sets the masked modifier flag when the key is pressed, clears it when the key is released.
+    APLY_PRESSED_RELEASED_MODIFIERS_MASK:    
     if (key_event->pressed == KEY_EVENT_TYPE_PRESSED)
     {
         modifiers_old = modifiers_old | mask;
@@ -283,6 +305,8 @@ static inline void ps2_kbd_set_modifiers(struct key_event_t *key_event)
     }
 
     key_event->modifiers = modifiers_old;
+    
+    return;
 }
 
 /*
