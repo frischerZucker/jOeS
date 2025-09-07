@@ -227,6 +227,8 @@ static inline void ps2_kbd_set_modifiers(struct key_event_t *key_event)
 {
     // Stores the modifiers of the last run. This is needed to toggle caps lock.
     static uint16_t modifiers_old = 0;
+    static uint8_t num_shift_keys_pressed = 0;
+    static uint8_t num_strg_keys_pressed = 0;
 
     uint16_t mask = 0;
 
@@ -250,7 +252,44 @@ static inline void ps2_kbd_set_modifiers(struct key_event_t *key_event)
 
     case KEY_LSHIFT:
     case KEY_RSHIFT:
-        mask = KBD_MODIFIER_MASK_SHIFT;
+        /*
+            Count how many Shift keys are pressed. 
+            Set the flag everytime a Shift key is pressed. 
+            Only clear the flag when no Shift key is pressed.
+            This is needed beacause there are two Shift keys and the flag should be set as long as any of them is pressed.
+        */
+        if (key_event->pressed == KEY_EVENT_TYPE_PRESSED)
+        {
+            num_shift_keys_pressed = num_shift_keys_pressed + 1;
+            mask = KBD_MODIFIER_MASK_SHIFT;
+        }
+        else
+        {
+            num_shift_keys_pressed = num_shift_keys_pressed - 1;
+            if (num_shift_keys_pressed == 0)
+            {
+                mask = KBD_MODIFIER_MASK_SHIFT;
+            } 
+        }     
+        goto APLY_PRESSED_RELEASED_MODIFIERS_MASK;
+        break;
+    
+    case KEY_LSTRG:
+    case KEY_RSTRG:
+        // Do the same thing as with Shift, as there are also two Strg keys.
+        if (key_event->pressed == KEY_EVENT_TYPE_PRESSED)
+        {
+            num_strg_keys_pressed = num_strg_keys_pressed + 1;
+            mask = KBD_MODIFIER_MASK_STRG;
+        }
+        else
+        {
+            num_strg_keys_pressed = num_strg_keys_pressed - 1;
+            if (num_strg_keys_pressed == 0)
+            {
+                mask = KBD_MODIFIER_MASK_STRG;
+            } 
+        }     
         goto APLY_PRESSED_RELEASED_MODIFIERS_MASK;
         break;
     
@@ -261,12 +300,6 @@ static inline void ps2_kbd_set_modifiers(struct key_event_t *key_event)
     
     case KEY_ALTGR:
         mask = KBD_MODIFIER_MASK_ALTGR;
-        goto APLY_PRESSED_RELEASED_MODIFIERS_MASK;
-        break;
-    
-    case KEY_LSTRG:
-    case KEY_RSTRG:
-        mask = KBD_MODIFIER_MASK_STRG;
         goto APLY_PRESSED_RELEASED_MODIFIERS_MASK;
         break;
 
@@ -281,6 +314,9 @@ static inline void ps2_kbd_set_modifiers(struct key_event_t *key_event)
         break;
 
     default:
+        // Key event does not correspond to a modifier key, so no flags need to be set / cleared.
+        key_event->modifiers = modifiers_old;
+        return;
         break;
     }
 
@@ -289,8 +325,10 @@ static inline void ps2_kbd_set_modifiers(struct key_event_t *key_event)
     if (key_event->pressed == KEY_EVENT_TYPE_PRESSED)
     {
         modifiers_old = modifiers_old ^ mask;
-        key_event->modifiers = modifiers_old;
     }
+
+    key_event->modifiers = modifiers_old;
+
     return;
 
     // Sets the masked modifier flag when the key is pressed, clears it when the key is released.
@@ -305,7 +343,7 @@ static inline void ps2_kbd_set_modifiers(struct key_event_t *key_event)
     }
 
     key_event->modifiers = modifiers_old;
-    
+
     return;
 }
 
