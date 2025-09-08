@@ -90,9 +90,9 @@ static key_code_t mapping_scancode_set_1_to_keycode[256] =
     [0x26] = KEY_L,
     [0x27] = KEY_Ö,
     [0x28] = KEY_Ä,
-    [0x29] = KEY_HASHTAG,
+    [0x29] = KEY_CIRCUMFLEX,
     [0x2a] = KEY_LSHIFT,
-    [0x2b] = KEY_LESS_THEN,
+    [0x2b] = KEY_HASHTAG,
     [0x2c] = KEY_Y,
     [0x2d] = KEY_X,
     [0x2e] = KEY_C,
@@ -134,6 +134,7 @@ static key_code_t mapping_scancode_set_1_to_keycode[256] =
     [0x52] = KEY_KEYPAD_0,
     [0x53] = KEY_KEYPAD_DELETE,
     [0x57] = KEY_F11,
+    [0x56] = KEY_LESS_THEN,
     [0x58] = KEY_F12,
     [0x90] = KEY_MULTIMEDIA_PREVIOUS_TRACK,
     [0x99] = KEY_MULTIMEDIA_NEXT_TRACK,
@@ -590,7 +591,6 @@ void ps2_kbd_irq_callback(void)
     // Set or clear modifier flags.
     ps2_kbd_set_modifiers(&key_event);
 
-    printf("PS/2 KBD: Key: %d, Key event type: %d, Modifiers: %d.\n", key_event.keycode, key_event.pressed, key_event.modifiers);
     // A full scan code was received, so we return back to the "normal" state.
     ps2_kbd_state = PS2_KBD_STATE_NORMAL;
 }
