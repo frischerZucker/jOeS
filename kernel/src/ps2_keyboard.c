@@ -591,6 +591,8 @@ void ps2_kbd_irq_callback(void)
     // Set or clear modifier flags.
     ps2_kbd_set_modifiers(&key_event);
 
+    printf("%s", key_event_to_ascii(&key_event));
+
     // A full scan code was received, so we return back to the "normal" state.
     ps2_kbd_state = PS2_KBD_STATE_NORMAL;
 }
