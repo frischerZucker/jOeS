@@ -36,6 +36,8 @@ typedef enum ps2_kbd_states
 
 static ps2_kbd_state_t ps2_kbd_state = PS2_KBD_STATE_UNINITIALIZED;
 
+static uint8_t ps2_kbd_port = 0;
+
 /*
     Disable warnings for overwriting already initialized values during array initialization.
     First, I initialize the entire array with KEY_UNKNOWN and overwrite certain values with real key codes.
@@ -271,7 +273,7 @@ static inline void ps2_kbd_set_modifiers(struct key_event_t *key_event)
                 mask = KBD_MODIFIER_MASK_SHIFT;
             } 
         }     
-        goto APLY_PRESSED_RELEASED_MODIFIERS_MASK;
+        goto APPLY_PRESSED_RELEASED_MODIFIERS_MASK;
         break;
     
     case KEY_LSTRG:
@@ -290,27 +292,27 @@ static inline void ps2_kbd_set_modifiers(struct key_event_t *key_event)
                 mask = KBD_MODIFIER_MASK_STRG;
             } 
         }     
-        goto APLY_PRESSED_RELEASED_MODIFIERS_MASK;
+        goto APPLY_PRESSED_RELEASED_MODIFIERS_MASK;
         break;
     
     case KEY_ALT:
         mask = KBD_MODIFIER_MASK_ALT;
-        goto APLY_PRESSED_RELEASED_MODIFIERS_MASK;
+        goto APPLY_PRESSED_RELEASED_MODIFIERS_MASK;
         break;
     
     case KEY_ALTGR:
         mask = KBD_MODIFIER_MASK_ALTGR;
-        goto APLY_PRESSED_RELEASED_MODIFIERS_MASK;
+        goto APPLY_PRESSED_RELEASED_MODIFIERS_MASK;
         break;
 
     case KEY_LSUPER:
         mask = KBD_MODIFIER_MASK_LSUPER;
-        goto APLY_PRESSED_RELEASED_MODIFIERS_MASK;
+        goto APPLY_PRESSED_RELEASED_MODIFIERS_MASK;
         break;
     
     case KEY_RSUPER:
         mask = KBD_MODIFIER_MASK_RSUPER;
-        goto APLY_PRESSED_RELEASED_MODIFIERS_MASK;
+        goto APPLY_PRESSED_RELEASED_MODIFIERS_MASK;
         break;
 
     default:
@@ -332,7 +334,7 @@ static inline void ps2_kbd_set_modifiers(struct key_event_t *key_event)
     return;
 
     // Sets the masked modifier flag when the key is pressed, clears it when the key is released.
-    APLY_PRESSED_RELEASED_MODIFIERS_MASK:    
+    APPLY_PRESSED_RELEASED_MODIFIERS_MASK:    
     if (key_event->pressed == KEY_EVENT_TYPE_PRESSED)
     {
         modifiers_old = modifiers_old | mask;
@@ -585,7 +587,8 @@ void ps2_kbd_irq_callback(void)
 
     key_event.keycode = ps2_kbd_scancode_to_keycode(scancode_raw, ps2_kbd_state, PS2_KBD_SCANCODE_SET_1);
 
-    ps2_kbd_set_modifiers(&key_event); // Set of clear modifier flags.
+    // Set or clear modifier flags.
+    ps2_kbd_set_modifiers(&key_event);
 
     printf("PS/2 KBD: Key: %d, Key event type: %d, Modifiers: %d.\n", key_event.keycode, key_event.pressed, key_event.modifiers);
     // A full scan code was received, so we return back to the "normal" state.
@@ -604,6 +607,8 @@ void ps2_kbd_irq_callback(void)
 */
 ps2_kbd_error_codes_t ps2_kbd_init(uint8_t port)
 {
+    ps2_kbd_port = port;
+
     // Abort if the driver is already initialized.
     if (ps2_kbd_state != PS2_KBD_STATE_UNINITIALIZED)
     {
@@ -614,10 +619,10 @@ ps2_kbd_error_codes_t ps2_kbd_init(uint8_t port)
     printf("PS/2 KBD: Initializing keyboard driver for port %d.\n", port);
 
     // Disable scanning so that the keyboard cannot disturb the initialization.
-    ps2_send_byte(port, PS2_KBD_DISABLE_SCANNING);
+    ps2_send_byte(ps2_kbd_port, PS2_KBD_DISABLE_SCANNING);
 
     // Enable scancode set 1.
-    if (ps2_kbd_set_scancode_set(port, PS2_KBD_SCANCODE_SET_1) != PS2_KBD_OK)
+    if (ps2_kbd_set_scancode_set(ps2_kbd_port, PS2_KBD_SCANCODE_SET_1) != PS2_KBD_OK)
     {
         printf("PS/2 KBD: Couldn't set the scancode set!");
         return PS2_KBD_ERROR_SET_SCANCODE_SET_FAILED;
@@ -627,7 +632,7 @@ ps2_kbd_error_codes_t ps2_kbd_init(uint8_t port)
     pic_enable_irq(1);
 
     // Enable scanning to be able to get keyboard input.
-    ps2_send_byte(port, PS2_KBD_ENABLE_SCANNING);
+    ps2_send_byte(ps2_kbd_port, PS2_KBD_ENABLE_SCANNING);
 
     ps2_kbd_state = PS2_KBD_STATE_NORMAL;
 
