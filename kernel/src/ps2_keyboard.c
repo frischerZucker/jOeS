@@ -46,7 +46,7 @@ static uint8_t ps2_kbd_port = 0;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Woverride-init"
 // Look up table to convert scan codes (scan code set 1) to key codes.
-static key_code_t mapping_scancode_set_1_to_keycode[256] =
+static key_code_t ps2_kbd_mapping_scancode_set_1_to_keycode[256] =
 {
     [0x00 ... 0xff] = KEY_UNKNOWN,
 
@@ -205,7 +205,7 @@ static inline key_code_t ps2_kbd_scancode_to_keycode(uint8_t scancode, ps2_kbd_s
             scancode = scancode | (1 << 7);
         }
         // Get the correct key code for the scan code.
-        return mapping_scancode_set_1_to_keycode[scancode];
+        return ps2_kbd_mapping_scancode_set_1_to_keycode[scancode];
         break;
     
     default:
