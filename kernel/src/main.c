@@ -60,12 +60,12 @@ void kmain(void)
     gdt_install(gdt);
     // I think if this line is reached the gdt was loaded correctly????
     // I have do look up for some checks to better check it. At least it didn't crash if you can see this lol
-    terminal_write_string("> GDT loaded successfully.\n", strlen("> GDT loaded successfully.\n"));
+    printf("GDT: GDT loaded successfully.\n");
 
     idt_init();
     idt_install(idt);
     // It's the same as with the GDT.. I think if this code is printed, the IDT was loaded correctly.
-    terminal_write_string("> IDT loaded successfully.\n", strlen("> IDT loaded successfully.\n"));
+    printf("IDT: IDT loaded successfully.\n");
 
     // Initialize the PIC and enable interrupts.
     pic_init(0x20, 0x28);    
@@ -82,13 +82,6 @@ void kmain(void)
     serial_print_line(COM1, "If you can see this, sending strings via serial works! :D\n");
     
     ps2_init_controller();
-
-    int test = 0;
-    printf("int: %d %i, uint: %u %u %u\n", -1, 100, 100, -678, UINT_MAX);
-    printf("oct: %o %o %o, hex: %x %x %x\n", 1, 8, 32, 1, 32, 255);
-    printf("pointer: %p %p\n", &idt, &framebuffer);
-    printf("abcdef%n\n", &test);
-    printf("%d", test);
 
     hcf();
 }
