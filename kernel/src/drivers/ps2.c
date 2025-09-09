@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include "stdio.h"
 
+#include "pic.h"
 #include "port_io.h"
 #include "ps2_keyboard.h"
 #include "serial.h"
@@ -575,6 +576,9 @@ uint8_t ps2_init_controller(void)
             printf("PS/2: There is no mouse driver yet :(\n");
         }
     }
+
+    // Enable the interrupt used by PS/2 keyboards.
+    pic_enable_irq(1);
 
     printf("PS/2: Controller initialized.\n");
     return 0;

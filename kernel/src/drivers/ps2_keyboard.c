@@ -2,7 +2,6 @@
 
 #include "stdio.h"
 
-#include "pic.h"
 #include "ps2.h"
 
 #define PS2_KBD_ENABLE_SCANNING 0xf4
@@ -365,6 +364,7 @@ static ps2_kbd_error_codes_t ps2_kbd_set_scancode_set(uint8_t port, ps2_kbd_scan
     do
     {
         ps2_send_byte(port, PS2_KBD_GET_SET_SCANCODE_SET);
+        ps2_receive_byte(&response);
         ps2_send_byte(port, scancode_set);
 
         ps2_receive_byte(&response);
@@ -383,7 +383,7 @@ static ps2_kbd_error_codes_t ps2_kbd_set_scancode_set(uint8_t port, ps2_kbd_scan
         return PS2_KBD_ERROR_TOO_MANY_RESENDS;
     }
 
-    printf("PS/2 KBD: Enabled scancode set %d.", scancode_set);
+    printf("PS/2 KBD: Enabled scancode set %d.\n", scancode_set);
 
     return PS2_KBD_OK;
 }
@@ -624,13 +624,12 @@ ps2_kbd_error_codes_t ps2_kbd_init(uint8_t port)
         return PS2_KBD_ERROR_SET_SCANCODE_SET_FAILED;
     }
 
-    // Enable the interrupt used by the keyboard.
-    pic_enable_irq(1);
-
     // Enable scanning to be able to get keyboard input.
     ps2_send_byte(ps2_kbd_port, PS2_KBD_ENABLE_SCANNING);
 
     ps2_kbd_state = PS2_KBD_STATE_NORMAL;
+
+    printf("PS/2 KBD: Keyboard initialized.\n");
 
     return PS2_KBD_OK;
 }
