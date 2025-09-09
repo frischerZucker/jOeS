@@ -2,6 +2,58 @@
 
 #include "keyboard_layouts.h"
 
+struct key_event_t kbd_key_event_buffer[KBD_KEY_EVENT_BUFFER_SIZE] = {0};
+uint8_t kbd_key_event_buffer_capacity = KBD_KEY_EVENT_BUFFER_SIZE;
+uint8_t kbd_key_event_buffer_size = 0;
+uint8_t kbd_key_event_buffer_front = 0;
+
+/*
+    Appends a key event to the key event buffer.
+
+    Appends a key event to the key event ring buffer. If the buffer is full, old values are overwritten.
+
+    @param key_event Pointer to the key event to append.
+*/
+void kbd_append_key_event_to_buffer(struct key_event_t *key_event)
+{    
+    uint8_t rear = (kbd_key_event_buffer_front + kbd_key_event_buffer_size) % KBD_KEY_EVENT_BUFFER_SIZE;
+
+    kbd_key_event_buffer[rear] = *key_event;
+
+    if (kbd_key_event_buffer_size < kbd_key_event_buffer_capacity)
+    {
+        kbd_key_event_buffer_size = kbd_key_event_buffer_size + 1;
+    }
+    else
+    {
+        kbd_key_event_buffer_front = (kbd_key_event_buffer_front + 1) % KBD_KEY_EVENT_BUFFER_SIZE;
+    }
+}
+
+/*
+    Retrieves the next key event from the key event buffer.
+
+    Tries to read a key event from the key event ring buffer.
+    If the buffer is empty, the function returns an error code and does not modify *dest.
+
+    @param dest Pointer to where the key event will be stored.
+    @returns KBD_KEY_EVENT_BUFFER_OK on success, KBD_KEY_EVENT_BUFFER_EMPTY if the buffer is empty.
+*/
+kbd_error_codes_t kbd_get_key_event_from_buffer(struct key_event_t *dest)
+{
+    if (kbd_key_event_buffer_size <= 0)
+    {
+        return KBD_ERROR_KEY_EVENT_BUFFER_EMPTY;
+    }
+
+    *dest = kbd_key_event_buffer[kbd_key_event_buffer_front];
+
+    kbd_key_event_buffer_front = (kbd_key_event_buffer_front + 1) % KBD_KEY_EVENT_BUFFER_SIZE;
+    kbd_key_event_buffer_size = kbd_key_event_buffer_size - 1;
+
+    return KBD_ERROR_KEY_EVENT_BUFFER_OK;
+}
+
 /*
     Converts a key event into its corresponding ASCI character(s).
 
@@ -13,7 +65,7 @@
     @param key_event Pointer to the key event to convert.
     @returns Pointer to a character string (may be empty).
 */
-char * key_event_to_ascii(struct key_event_t *key_event)
+char * kbd_key_event_to_ascii(struct key_event_t *key_event)
 {
     // Only return characters when a key was pressed.
     if (key_event->pressed == KEY_EVENT_TYPE_RELEASED)

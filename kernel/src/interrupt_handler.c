@@ -3,6 +3,7 @@
 #include "stdio.h"
 
 #include "hcf.h"
+#include "keyboard.h"
 #include "pic.h"
 #include "ps2_keyboard.h"
 
@@ -67,6 +68,14 @@ void interrupt_handler(struct interrupt_stack_frame *stack)
         break;
     // IRQs from the PIC.
     case INT_EXT_INT0: // PIT
+        /*
+            Retrieve key events and print corresponding ASCII characters if possible.
+        */
+        struct key_event_t key_event;
+        while (kbd_get_key_event_from_buffer(&key_event) != KBD_ERROR_KEY_EVENT_BUFFER_EMPTY)
+        {
+            printf("%s", kbd_key_event_to_ascii(&key_event));
+        }
         pic_send_eoi(0);
         break;
     case INT_EXT_INT1:

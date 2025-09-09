@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define KBD_KEY_EVENT_BUFFER_SIZE 32
+
 // Keycodes. I use a german keyboard layout (QWERTZ), so the keycodes are the main symbols on a german keyboard.
 typedef enum key_codes
 {
@@ -171,6 +173,17 @@ struct key_event_t
     uint16_t modifiers;
 };
 
-char * key_event_to_ascii(struct key_event_t *key_event);
+typedef enum kbd_error_codes {
+    KBD_ERROR_KEY_EVENT_BUFFER_OK = 0,
+    KBD_ERROR_KEY_EVENT_BUFFER_EMPTY,
+    KBD_ERROR_KEY_EVENT_BUFFER_FULL
+} kbd_error_codes_t;
+
+extern struct key_event_t kbd_key_event_buffer[KBD_KEY_EVENT_BUFFER_SIZE];
+
+void kbd_append_key_event_to_buffer(struct key_event_t *key_event);
+kbd_error_codes_t kbd_get_key_event_from_buffer(struct key_event_t *dest);
+
+char * kbd_key_event_to_ascii(struct key_event_t *key_event);
 
 #endif // KEYBOARD_H

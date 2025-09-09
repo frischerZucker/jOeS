@@ -220,10 +220,6 @@ static inline key_code_t ps2_kbd_scancode_to_keycode(uint8_t scancode, ps2_kbd_s
 
     Sets and clears modifier flags (shift, caps lock, alt, altgr, strg, left super and right super) for a key event.
 
-    TODO: 
-    If any of both strg or shift keys is released, it's modifier flag is cleared.
-    In case both keys are pressed simoultanously, this shouldn't happen until the last one is released.
-
     @param key_event Key event for which the modifiers should be set.
 */
 static inline void ps2_kbd_set_modifiers(struct key_event_t *key_event)
@@ -405,9 +401,6 @@ static ps2_kbd_error_codes_t ps2_kbd_set_scancode_set(uint8_t port, ps2_kbd_scan
     - switching back from "invalid" to "normal" state, when the last expected byte of scancodes with more then 2 bytes is received
 
     It should be called from the interrupt handler's EXT_INT_1 case, as this interrupt is generated for every incoming byte.
-
-    TODO:
-    - Append keyevents to some sort of buffer
 */
 void ps2_kbd_irq_callback(void)
 {
@@ -591,7 +584,8 @@ void ps2_kbd_irq_callback(void)
     // Set or clear modifier flags.
     ps2_kbd_set_modifiers(&key_event);
 
-    printf("%s", key_event_to_ascii(&key_event));
+    // Add the key event to the key event buffer, so that whatever wants key events can read it from there.
+    kbd_append_key_event_to_buffer(&key_event);
 
     // A full scan code was received, so we return back to the "normal" state.
     ps2_kbd_state = PS2_KBD_STATE_NORMAL;
