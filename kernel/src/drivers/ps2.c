@@ -222,7 +222,7 @@ static void ps2_flush_output_buffer(void)
     @param data Data to send to the port.
     @returns PS2_OK if the byte was successfully sent, PS2_ERROR_TIMEOUT if the operation timed out.
 */
-uint8_t ps2_send_byte(uint8_t port, uint8_t data)
+ps2_error_codes_t ps2_send_byte(uint8_t port, uint8_t data)
 {
     unsigned int timeout = PS2_TIMEOUT;
 
@@ -257,7 +257,7 @@ uint8_t ps2_send_byte(uint8_t port, uint8_t data)
     @param dest Pointer to a variable where the received byte is stored.
     @returns PS2_OK if a byte was successfully read, PS2_ERROR_TIMEOUT if the operation timed out.
 */
-uint8_t ps2_receive_byte(uint8_t *dest)
+ps2_error_codes_t ps2_receive_byte(uint8_t *dest)
 {
     unsigned int timeout = PS2_TIMEOUT;
 
@@ -287,7 +287,7 @@ uint8_t ps2_receive_byte(uint8_t *dest)
     @returns PS2_OK if the devices response is ok, PS2_ERROR_DEVICE_RESET_FAILED if not
              or PS2_ERROR_TIMEOUT if there was a timeout.
 */
-uint8_t ps2_reset_device(uint8_t port)
+ps2_error_codes_t ps2_reset_device(uint8_t port)
 {
     ps2_send_byte(port, PS2_DEV_CMD_RESET);
 
@@ -325,7 +325,7 @@ uint8_t ps2_reset_device(uint8_t port)
     @param device_type Pointer to a variable where the devices id is stored.
     @returns PS2_ERROR_NO_ACK or PS2_ERROR_TIMEOUT if something went wrong, otherwise PS2_OK.
 */
-uint8_t ps2_identify_device(uint8_t port, int32_t *device_type)
+ps2_error_codes_t ps2_identify_device(uint8_t port, int32_t *device_type)
 {
 
     // Read and discard data from the PS/2 port that was there before we started the identification.
@@ -395,7 +395,7 @@ uint8_t ps2_identify_device(uint8_t port, int32_t *device_type)
              PS2_ERROR_CONTROLLER_TEST_FAILED if the controller test failed or PS2_ERROR_TIMEOUT if there
              was a timeout.
 */
-uint8_t ps2_init_controller(void)
+ps2_error_codes_t ps2_init_controller(void)
 {
     uint8_t response = 0; // Used for receiving data via PS/2 when I don't really know where to put it.
 
@@ -580,5 +580,5 @@ uint8_t ps2_init_controller(void)
     pic_enable_irq(1);
 
     printf("PS/2: Controller initialized.\n");
-    return 0;
+    return PS2_OK;
 }

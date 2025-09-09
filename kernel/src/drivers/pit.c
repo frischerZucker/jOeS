@@ -12,9 +12,9 @@
     @param channel PIT channel to initialize.
     @param frequency Frequency the PIT should run at.
     @param mode Mode the PIT should run in.
-    @returns 0 if success, PIT_ERROR_FREQUENCY_OUT_OF_BOUNDS (1) if frequency is too large / small.
+    @returns PIT_OK on success, PIT_ERROR_FREQUENCY_OUT_OF_BOUNDS if frequency is too large / small.
 */
-uint8_t pit_init_channel(uint8_t channel, uint64_t frequency, uint8_t mode)
+pit_error_codes pit_init_channel(uint8_t channel, uint64_t frequency, uint8_t mode)
 {
     asm("cli");
 
@@ -41,5 +41,5 @@ uint8_t pit_init_channel(uint8_t channel, uint64_t frequency, uint8_t mode)
 
     asm("sti");
 
-    return 0;
+    return PIT_OK;
 }

@@ -122,7 +122,7 @@ void serial_read_line(uint16_t port, char *dest, size_t buffer_size)
     @returns SERIAL_ERROR_BR_OUT_OF_BOUNDS if baud rate is too low / high,
              or SERIAL_LOOPBACK_FAILED if loopback test fails, otherwise SERIAL_OK.
 */
-uint8_t serial_init(uint16_t port, uint32_t baud_rate, uint8_t mode)
+serial_error_codes_t serial_init(uint16_t port, uint32_t baud_rate, uint8_t mode)
 {
     // Check if the baud rate is ok, return if isn't..
     if (baud_rate > SERIAL_BAUD_RATE_MAX || baud_rate < 1)
@@ -162,7 +162,7 @@ uint8_t serial_init(uint16_t port, uint32_t baud_rate, uint8_t mode)
     @param port Serial port to test.
     @returns SERIAL_OK (0) if the sent byte is received, otherwise SERIAL_LOOPBACK_FAILED (2).
 */
-uint8_t serial_test(uint16_t port)
+serial_error_codes_t serial_test(uint16_t port)
 {
     // Set serial port to loopback mode.
     port_write_byte(SERIAL_MODEM_CONTROL_REG(port), SERIAL_LOOPBACK_MODE);

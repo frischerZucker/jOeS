@@ -50,9 +50,9 @@ void terminal_set_color(uint32_t color)
     Automatically moves to the next line if the cursor exceeds the screen width.
 
     @param c ASCII character to draw.
-    @returns 0 on success, -1 if character is not printable.
+    @returns TERMINAL_OK on success, TERMINAL_ERROR_UNHANDLED_CHARACTER if character is not handled by this function.
 */
-uint8_t terminal_put_char(uint8_t c)
+terminal_error_codes_t terminal_put_char(uint8_t c)
 {
     switch (c)
     {
@@ -76,7 +76,7 @@ uint8_t terminal_put_char(uint8_t c)
         // c is not printable -> exit with error code
         if (c < 32 || c > 126)
         {
-            return -1;
+            return TERMINAL_ERROR_UNHANDLED_CHARACTER;
         }
 
         framebuffer_draw_char(terminal.framebuffer, c, terminal.cursor_x * terminal.char_w, terminal.cursor_y * terminal.char_h, terminal.fg_color);
@@ -99,7 +99,7 @@ uint8_t terminal_put_char(uint8_t c)
         framebuffer_clear(terminal.framebuffer, 0);
     }
 
-    return 0;
+    return TERMINAL_OK;
 }
 
 /*

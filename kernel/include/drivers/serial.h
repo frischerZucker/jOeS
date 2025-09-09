@@ -28,13 +28,16 @@
 #define SERIAL_ENABLE_FIFOS 1
 
 // Status codes that can be returned by serial functions.
-#define SERIAL_OK 0
-#define SERIAL_ERROR_BR_OUT_OF_BOUNDS 1
-#define SERIAL_LOOPBACK_FAILED 2
+typedef enum serial_error_codes
+{
+    SERIAL_OK = 0,
+    SERIAL_ERROR_BR_OUT_OF_BOUNDS,
+    SERIAL_LOOPBACK_FAILED
+} serial_error_codes_t;
 
-uint8_t serial_init(uint16_t port, uint32_t baud_rate, uint8_t mode);
+serial_error_codes_t serial_init(uint16_t port, uint32_t baud_rate, uint8_t mode);
 
-uint8_t serial_test(uint16_t port);
+serial_error_codes_t serial_test(uint16_t port);
 
 void serial_send_byte(uint16_t port, uint8_t data);
 uint8_t serial_read_byte(uint16_t port);

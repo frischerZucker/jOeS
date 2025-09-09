@@ -19,11 +19,17 @@ struct terminal
     struct limine_framebuffer *framebuffer;
 };
 
+typedef enum terminal_error_codes
+{
+    TERMINAL_OK = 0,
+    TERMINAL_ERROR_UNHANDLED_CHARACTER,
+} terminal_error_codes_t;
+
 void terminal_init(struct limine_framebuffer *framebuffer, uint8_t char_w, uint8_t char_h);
 
 void terminal_set_color(uint32_t color);
 
-uint8_t terminal_put_char(uint8_t c);
+terminal_error_codes_t terminal_put_char(uint8_t c);
 void terminal_write_string(char *str, size_t len);
 
 #endif

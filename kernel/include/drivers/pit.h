@@ -30,8 +30,12 @@
 #define PIT_BCD_BINARY 0
 #define PIT_BCD_BCD 1
 
-#define PIT_ERROR_FREQUENCY_OUT_OF_BOUNDS 1
+typedef enum pit_error_codes
+{
+    PIT_OK = 0,
+    PIT_ERROR_FREQUENCY_OUT_OF_BOUNDS
+} pit_error_codes;
 
-uint8_t pit_init_channel(uint8_t channel, uint64_t frequency, uint8_t mode);
+pit_error_codes pit_init_channel(uint8_t channel, uint64_t frequency, uint8_t mode);
 
 #endif
