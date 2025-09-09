@@ -1,11 +1,11 @@
-#include "interrupt_handler.h"
+#include "cpu/interrupt_handler.h"
 
 #include "stdio.h"
 
-#include "hcf.h"
-#include "keyboard.h"
-#include "pic.h"
-#include "ps2_keyboard.h"
+#include "cpu/hcf.h"
+#include "drivers/keyboard.h"
+#include "drivers/pic.h"
+#include "drivers/ps2_keyboard.h"
 
 /*
     Handles CPU exceptions and interrupts.

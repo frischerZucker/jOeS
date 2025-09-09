@@ -1,4 +1,4 @@
-#include "hcf.h"
+#include "cpu/hcf.h"
 
 /*
     Halt-And-Catch-Fire function.

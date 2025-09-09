@@ -16,6 +16,6 @@ mkdir --parent --verbose $SYSROOT/usr/include
 for PROJECT in $SYSTEM_HEADER_PROJECTS; do
     (
         cd $PROJECT
-        cp --verbose include/*.h $SYSROOT/usr/include/
+        cp --recursive --verbose include/ $SYSROOT/usr/
     )
 done

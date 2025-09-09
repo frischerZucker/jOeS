@@ -1,6 +1,6 @@
-#include "pic.h"
+#include "drivers/pic.h"
 
-#include "port_io.h"
+#include "cpu/port_io.h"
 
 #define PIC_ICW1_INIT (1 << 4)
 #define PIC_ICW1_ICW4_NEEDED 1

@@ -1,8 +1,8 @@
-#include "pit.h"
+#include "drivers/pit.h"
 
 #include "stdio.h"
 
-#include "port_io.h"
+#include "cpu/port_io.h"
 
 /*
     Initializes a channel of the PIT.

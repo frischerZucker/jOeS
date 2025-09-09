@@ -1,8 +1,8 @@
-#include "ps2_keyboard.h"
+#include "drivers/ps2_keyboard.h"
 
 #include "stdio.h"
 
-#include "ps2.h"
+#include "drivers/ps2.h"
 
 #define PS2_KBD_ENABLE_SCANNING 0xf4
 #define PS2_KBD_DISABLE_SCANNING 0xf5

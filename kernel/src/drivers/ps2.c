@@ -1,12 +1,11 @@
-#include "ps2.h"
+#include "drivers/ps2.h"
 
 #include <stdbool.h>
 #include "stdio.h"
 
-#include "pic.h"
-#include "port_io.h"
-#include "ps2_keyboard.h"
-#include "serial.h"
+#include "drivers/pic.h"
+#include "cpu/port_io.h"
+#include "drivers/ps2_keyboard.h"
 
 // Adresses of the IO ports used by the PS/2 controller.
 #define PS2_DATA 0x60

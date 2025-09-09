@@ -8,13 +8,13 @@
 #include "string.h"
 
 #include "charset.h"
-#include "gdt.h"
-#include "hcf.h"
-#include "idt.h"
-#include "pic.h"
-#include "pit.h"
-#include "ps2.h"
-#include "serial.h"
+#include "cpu/gdt.h"
+#include "cpu/hcf.h"
+#include "cpu/idt.h"
+#include "drivers/pic.h"
+#include "drivers/pit.h"
+#include "drivers/ps2.h"
+#include "drivers/serial.h"
 #include "terminal.h"
 
 // set limine base revision to 3

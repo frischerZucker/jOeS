@@ -1,7 +1,7 @@
 #ifndef PS2_KEYBOARD
 #define PS2_KEYBOARD
 
-#include "keyboard.h"
+#include "drivers/keyboard.h"
 
 typedef enum ps2_kbd_error_codes
 {

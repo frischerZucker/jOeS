@@ -1,9 +1,9 @@
-#include "serial.h"
+#include "drivers/serial.h"
 
 #include "stdio.h"
 #include "string.h"
 
-#include "port_io.h"
+#include "cpu/port_io.h"
 
 // Register offsets.
 #define SERIAL_INT_ENABLE_REG(p) (p + 1)

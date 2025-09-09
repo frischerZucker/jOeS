@@ -1,6 +1,6 @@
-#include "keyboard.h"
+#include "drivers/keyboard.h"
 
-#include "keyboard_layouts.h"
+#include "drivers/keyboard_layouts.h"
 
 struct key_event_t kbd_key_event_buffer[KBD_KEY_EVENT_BUFFER_SIZE] = {0};
 uint8_t kbd_key_event_buffer_capacity = KBD_KEY_EVENT_BUFFER_SIZE;

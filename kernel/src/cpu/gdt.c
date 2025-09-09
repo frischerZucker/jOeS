@@ -1,4 +1,4 @@
-#include <gdt.h>
+#include <cpu/gdt.h>
 
 struct gdt_descriptor gdt[GDT_NUM_ENTRIES];
 
