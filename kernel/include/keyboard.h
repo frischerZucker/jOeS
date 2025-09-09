@@ -171,14 +171,6 @@ struct key_event_t
     uint16_t modifiers;
 };
 
-struct keyboard_layout_t
-{
-    char *normal[256];
-    char *shift[256];
-    char *ctrl[256];
-    char *altgr[256];
-};
-
 char * key_event_to_ascii(struct key_event_t *key_event);
 
 #endif // KEYBOARD_H
