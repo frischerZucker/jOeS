@@ -14,9 +14,8 @@
 
     @param framebuffer Pointer to the limine_framebuffer to clear.
     @param color 24-bit RGB color value to fill the screen with.
-    @returns Always returns 0.
 */
-uint8_t framebuffer_clear(struct limine_framebuffer *framebuffer, uint32_t color)
+void framebuffer_clear(struct limine_framebuffer *framebuffer, uint32_t color)
 {
     uint32_t *fb_ptr = framebuffer->address;
 
@@ -28,8 +27,6 @@ uint8_t framebuffer_clear(struct limine_framebuffer *framebuffer, uint32_t color
             fb_ptr[y * (framebuffer->pitch / (framebuffer->bpp / 8)) + x] = color;
         }
     }
-
-    return 0;
 }
 
 /*
@@ -43,9 +40,8 @@ uint8_t framebuffer_clear(struct limine_framebuffer *framebuffer, uint32_t color
     @param start_x X-coordinate of the glyph's top-left corner.
     @param start_y Y-coordinate of the glyph's top left corner.
     @param color 24-bit RGB color value.
-    @returns Always returns 0.
 */
-uint8_t framebuffer_draw_char(struct limine_framebuffer *framebuffer, char c, uint16_t start_x, uint16_t start_y, uint32_t color)
+void framebuffer_draw_char(struct limine_framebuffer *framebuffer, char c, uint16_t start_x, uint16_t start_y, uint32_t color)
 {
     uint32_t *fb_ptr = framebuffer->address;
 
@@ -61,6 +57,4 @@ uint8_t framebuffer_draw_char(struct limine_framebuffer *framebuffer, char c, ui
             }
         }
     }
-
-    return 0;
 }

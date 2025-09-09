@@ -21,9 +21,9 @@ struct terminal
 
 void terminal_init(struct limine_framebuffer *framebuffer, uint8_t char_w, uint8_t char_h);
 
-uint8_t terminal_set_color(uint32_t color);
+void terminal_set_color(uint32_t color);
 
 uint8_t terminal_put_char(uint8_t c);
-uint8_t terminal_write_string(char *str, size_t len);
+void terminal_write_string(char *str, size_t len);
 
 #endif

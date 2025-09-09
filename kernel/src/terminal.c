@@ -31,13 +31,10 @@ void terminal_init(struct limine_framebuffer *framebuffer, uint8_t char_w, uint8
     Sets the foreground color used to render text.
 
     @param color 24-bit RGB color value.
-    @returns Always returns 0.
 */
-uint8_t terminal_set_color(uint32_t color)
+void terminal_set_color(uint32_t color)
 {
     terminal.fg_color = color;
-
-    return 0;
 }
 
 /*
@@ -112,14 +109,11 @@ uint8_t terminal_put_char(uint8_t c)
 
     @param str Pointer to the character array to write.
     @param len Length of the string in characters.
-    @returns Always returns 0.
 */
-uint8_t terminal_write_string(char *str, size_t len)
+void terminal_write_string(char *str, size_t len)
 {
     for (size_t i = 0; i < len; i++)
     {
         terminal_put_char(str[i]);
     }
-
-    return 0;
 }
