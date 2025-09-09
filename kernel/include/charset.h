@@ -14,4 +14,4 @@
 
 extern uint8_t charset[95][CHAR_WIDTH * CHAR_HEIGHT];
 
-#endif
+#endif // CHARSET_H

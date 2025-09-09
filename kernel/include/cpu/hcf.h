@@ -14,4 +14,4 @@ static inline void hcf(void)
     }
 }
 
-#endif
+#endif // HCF_H

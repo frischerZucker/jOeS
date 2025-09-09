@@ -38,4 +38,4 @@ ps2_error_codes_t ps2_identify_device(uint8_t port, int32_t *device_type);
 ps2_error_codes_t ps2_send_byte(uint8_t port, uint8_t data);
 ps2_error_codes_t ps2_receive_byte(uint8_t *dest);
 
-#endif
+#endif // PS2_H

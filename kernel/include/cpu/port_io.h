@@ -39,4 +39,4 @@ static inline uint8_t port_read_byte(uint16_t port)
     return data;
 }
 
-#endif
+#endif // PORT_IO_H

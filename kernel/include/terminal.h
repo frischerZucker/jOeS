@@ -32,4 +32,4 @@ void terminal_set_color(uint32_t color);
 terminal_error_codes_t terminal_put_char(uint8_t c);
 void terminal_write_string(char *str, size_t len);
 
-#endif
+#endif // TERMINAL_H

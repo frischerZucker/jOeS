@@ -38,4 +38,4 @@ typedef enum pit_error_codes
 
 pit_error_codes pit_init_channel(uint8_t channel, uint64_t frequency, uint8_t mode);
 
-#endif
+#endif // PIT_H

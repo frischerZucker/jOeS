@@ -46,4 +46,4 @@ void serial_print(uint16_t port, char *data);
 void serial_print_line(uint16_t port, char *data);
 void serial_read_line(uint16_t port, char *dest, size_t buffer_size);
 
-#endif
+#endif // SERIAL_H
