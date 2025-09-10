@@ -47,17 +47,11 @@ LIBK_CPPFLAGS:=$(LIBK_CPPFLAGS) $(KERNEL_ARCH_CPPFLAGS) -m64 -mcmodel=kernel -fn
 BINDIR := bin
 OBJDIR := obj
 
-FREEOBJS=\
-$(ARCH_FREEOBJS) \
-string/memcmp.o \
-string/memcpy.o \
-string/memmove.o \
-string/memset.o \
-string/strlen.o \
-string/itoa.o \
-string/utoa.o \
-string/strrev.o \
-stdio/printf.o \
+SRCFILES :=  $(shell find -L -type f 2>/dev/null)
+
+CFILES := $(filter %.c, $(SRCFILES))
+
+FREEOBJS = $(CFILES:.c=.o)
 
 HOSTEDOBJS=\
 $(ARCH_HOSTEDOBJS) \
@@ -67,7 +61,7 @@ $(FREEOBJS) \
 $(HOSTEDOBJS) \
 
 LIBK_OBJS=$(addprefix $(OBJDIR)/, $(FREEOBJS:.o=.libk.o))
-OBJS := $(addprefix $(OBJDIR)/, $OBJS)
+OBJS := $(addprefix $(OBJDIR)/, $(OBJS))
 
 #BINARIES=libc.a libk.a # Not ready for libc yet.
 BINARIES=libk.a
@@ -103,7 +97,7 @@ $(OBJDIR)/%.libk.o: %.S
 	$(CC) -MD -c $< -o $@ $(LIBK_CFLAGS) $(LIBK_CPPFLAGS)
 
 clean:
-	rm -f $(OBJDIR) $(BINDIR)
+	rm -rf $(OBJDIR) $(BINDIR)
 
 -include $(OBJS:.o=.d)
 -include $(LIBK_OBJS:.o=.d)
