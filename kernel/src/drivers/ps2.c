@@ -17,6 +17,8 @@
 
 // For how many iterations sending and receiving data via the PS/2 port is tried until we give up.
 #define PS2_TIMEOUT 100000
+// How often a command is (re)sent until we give up.
+#define PS2_MAX_RESENDS 5
 
 // Device types and there responses to an identify command. This list isn't complete.
 // If you add more device types, remember to update ps2_device_is_keyboard() and ps2_device_is_mouse()!  
@@ -213,16 +215,16 @@ static void ps2_flush_output_buffer(void)
 }
 
 /*
-    Sends a byte to a PS/2 port with timeout handling.
+    Sends a byte to a to the PS/2 with timeout but without response handling.
 
     Waits until the controller's input buffer is empty, so that new data can be sent.
     If the buffer stays full for more the PS2_TIMEOUT iterations, assumes an error and abborts.
 
     @param port Specifies to which PS/2 port the data should be sent.
-    @param data Data to send to the port.
+    @param data Byte to send to the controller.
     @returns PS2_OK if the byte was successfully sent, PS2_ERROR_TIMEOUT if the operation timed out.
 */
-ps2_error_codes_t ps2_send_byte(uint8_t port, uint8_t data)
+static ps2_error_codes_t ps2_raw_send_byte(uint8_t port, uint8_t data)
 {
     unsigned int timeout = PS2_TIMEOUT;
 
@@ -245,6 +247,57 @@ ps2_error_codes_t ps2_send_byte(uint8_t port, uint8_t data)
     port_write_byte(PS2_DATA, data);
 
     return PS2_OK;
+}
+
+/*
+    Sends a byte to a PS/2 device with timeout and response handling.
+
+    Attempts to send data up to PS2_MAX_RESENDS times.
+    Sends the data using ps2_raw_send_byte() and checks the devices response. 
+    If it wasn't ACK (0xfa) (or 0xee in case of an echo command), starts a new 
+    attempt to send it. If all attempts went wrong, an error is returned.
+
+    @param port Specifies to which PS/2 port the data should be sent.
+    @param data Data to send to the port.
+    @returns PS2_OK if the byte was successfully sent, PS2_ERROR_NO_ACK if all attempts went wrong.
+*/
+ps2_error_codes_t ps2_send_byte(uint8_t port, uint8_t data)
+{
+    uint8_t response;
+
+    // Tries for up to PS2_MAX_RESENDS times to send the byte.
+    for (size_t i = 0; i < PS2_MAX_RESENDS; i++)
+    {
+        // Send the data.
+        if (ps2_raw_send_byte(port, data) != PS2_OK)
+        {
+            continue;
+        }
+
+        // If no response is received, something went wrong and we start a new attempt.
+        if (ps2_receive_byte(&response) != PS2_OK)
+        {
+            continue;
+        }
+        // The device requests the data to be sent again, so we start a new attempt.
+        if (response == PS2_DEV_RESEND)
+        {
+            continue;
+        }
+        // The device answered with ACK, so it received the data and we can exit.
+        else if (response == PS2_DEV_ACK)
+        {
+            return PS2_OK;
+        }
+        // The device answered an ECHO command with the right response, so we can exit.
+        else if (response == PS2_DEV_ECHO && data == PS2_DEV_CMD_ECHO)
+        {
+            return PS2_OK;
+        }
+    }
+    
+    // All PS2_MAX_RESENDS attempts at sending the data went wrong, so we return an error code.
+    return PS2_ERROR_NO_ACK;
 }
 
 /*
@@ -289,23 +342,20 @@ ps2_error_codes_t ps2_receive_byte(uint8_t *dest)
 */
 ps2_error_codes_t ps2_reset_device(uint8_t port)
 {
-    ps2_send_byte(port, PS2_DEV_CMD_RESET);
+    if (ps2_send_byte(port, PS2_DEV_CMD_RESET) == PS2_ERROR_NO_ACK)
+    {
+        return PS2_ERROR_NO_ACK;
+    }
 
-    uint8_t response_1 = 0, response_2 = 0;
+    uint8_t response = 0;
 
-    if (ps2_receive_byte(&response_1) == PS2_ERROR_TIMEOUT)
+    if (ps2_receive_byte(&response) == PS2_ERROR_TIMEOUT)
     {
         printf("PS/2: Timeout during device reset!");
         return PS2_ERROR_TIMEOUT;
     }
-    if (ps2_receive_byte(&response_2) == PS2_ERROR_TIMEOUT)
-    {
-        printf("PS/2: Timeout during device reset!");
-        return PS2_ERROR_TIMEOUT;
-    }
 
-    // The response to a reset should be a "Command Acknowledged" and a "Selftest Passed", otherwise something went wrong.
-    if ((response_1 == PS2_DEV_ACK && response_2 == PS2_DEV_SELFTEST_PASSED) || (response_1 == PS2_DEV_SELFTEST_PASSED && response_2 == PS2_DEV_ACK))
+    if (response == PS2_DEV_SELFTEST_PASSED)
     {
         return PS2_OK;
     }
@@ -332,10 +382,8 @@ ps2_error_codes_t ps2_identify_device(uint8_t port, int32_t *device_type)
     // Otherwise there's a chance data is read that was no response to the commands that were sent in this function.
     ps2_flush_output_buffer();
 
-    uint8_t response = 0;
-    ps2_send_byte(port, PS2_DEV_CMD_DISABLE_SCANNING); // Disable scanning.
-    ps2_receive_byte(&response);
-    if (response != PS2_DEV_ACK)
+    // Disable scanning.
+    if (ps2_send_byte(port, PS2_DEV_CMD_DISABLE_SCANNING) == PS2_ERROR_NO_ACK)
     {
         return PS2_ERROR_NO_ACK;
     }
@@ -349,15 +397,15 @@ ps2_error_codes_t ps2_identify_device(uint8_t port, int32_t *device_type)
     }
     // Disable translation, so that we don't have to worry about different responses for when translation is enabled or disabled.  
     ps2_send_command(PS2_CMD_WRITE_CONFIG_BYTE);
-    ps2_send_byte(PS2_PORT_CMD, (config & ~(1 << 6)));
+    ps2_raw_send_byte(PS2_PORT_CMD, (config & ~(1 << 6)));
 
-    ps2_send_byte(port, PS2_DEV_CMD_IDENTIFY); // Ask the device to identify itself.
-    ps2_receive_byte(&response);
-    if (response != PS2_DEV_ACK)
+    // Ask the device to identify itself.
+    if (ps2_send_byte(port, PS2_DEV_CMD_IDENTIFY) == PS2_ERROR_NO_ACK)
     {
         return PS2_ERROR_NO_ACK;
     }
 
+    uint8_t response = 0;
     // If no response arrives, it's an ancient AT keyboard.
     // Set a device_type for this one as default and overwrite it if there is a response.
     *device_type = PS2_KBD_AT;    
@@ -376,7 +424,7 @@ ps2_error_codes_t ps2_identify_device(uint8_t port, int32_t *device_type)
 
     // Restore the old config byte. Enables translation if it was turned off earlier.
     ps2_send_command(PS2_CMD_WRITE_CONFIG_BYTE);
-    ps2_send_byte(PS2_PORT_CMD, config);
+    ps2_raw_send_byte(PS2_PORT_CMD, config);
 
     return PS2_OK;
 }
@@ -426,7 +474,7 @@ ps2_error_codes_t ps2_init_controller(void)
     config_byte.bits.port_1_translation_enabled = 0;
     // Send back the modified config byte.
     ps2_send_command(PS2_CMD_WRITE_CONFIG_BYTE);
-    ps2_send_byte(PS2_PORT_CMD, config_byte.byte);
+    ps2_raw_send_byte(PS2_PORT_CMD, config_byte.byte);
 
     // Perform controller self test.
     ps2_send_command(PS2_CMD_TEST_CONTROLLER);
@@ -443,7 +491,7 @@ ps2_error_codes_t ps2_init_controller(void)
 
     // Send back the modified config byte again, in case the self test reset the controller.
     ps2_send_command(PS2_CMD_WRITE_CONFIG_BYTE);
-    ps2_send_byte(PS2_PORT_CMD, config_byte.byte);
+    ps2_raw_send_byte(PS2_PORT_CMD, config_byte.byte);
 
     // Check if the second PS/2 port exists.
     ps2_send_command(PS2_CMD_ENABLE_PORT_2);
@@ -458,7 +506,7 @@ ps2_error_codes_t ps2_init_controller(void)
         // Make sure port 2 is disabled again.
         ps2_send_command(PS2_CMD_DISABLE_PORT_2);
         ps2_send_command(PS2_CMD_WRITE_CONFIG_BYTE);
-        ps2_send_byte(PS2_PORT_CMD, config_byte.byte);
+        ps2_raw_send_byte(PS2_PORT_CMD, config_byte.byte);
 
         ps2_port_2_supported = true;
         printf("PS/2: Second port is supported.\n");
@@ -530,7 +578,7 @@ ps2_error_codes_t ps2_init_controller(void)
         printf("PS/2: Enabled port 2.\n");
     }
     ps2_send_command(PS2_CMD_WRITE_CONFIG_BYTE);
-    ps2_send_byte(PS2_PORT_CMD, config_byte.byte);
+    ps2_raw_send_byte(PS2_PORT_CMD, config_byte.byte);
 
     // Reset connected PS/2 devices. If the reset fails there is no (working) device connected at the port.
     if (ps2_port_1_works)
