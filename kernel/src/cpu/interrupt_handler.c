@@ -7,8 +7,8 @@
 #include "drivers/pic.h"
 #include "drivers/ps2_keyboard.h"
 
-/*
-    Handles CPU exceptions and interrupts.
+/*!
+    @brief Handles CPU exceptions and interrupts.
 
     This function is called by the assembly stubs for each interrupt vector.
     - For exceptions without error codes (e.g. invalid opcode),
@@ -20,7 +20,7 @@
     - For unknown / unhandled interrupts, prints a generic message 
       including the interrupt vector and error code, then halts.
 
-    @param stack pointer to the interrupt stack frame pushed by the CPU.
+    @param stack Pointer to the interrupt stack frame pushed by the CPU.
 */
 void interrupt_handler(struct interrupt_stack_frame *stack)
 {

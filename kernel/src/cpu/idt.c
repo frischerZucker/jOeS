@@ -6,10 +6,10 @@ struct idt_gate_descriptor idt[IDT_ENTRIES];
 
 extern void _isr0x00(), _isr0x01(), _isr0x02(), _isr0x03(), _isr0x04(), _isr0x05(), _isr0x06(), _isr0x07(), _isr0x08(), _isr0x09(), _isr0x0a(), _isr0x0b(), _isr0x0c(), _isr0x0d(), _isr0x0e(), _isr0x0f(), _isr0x10(), _isr0x11(), _isr0x12(), _isr0x13(), _isr0x14(), _isr0x15(), _isr0x16(), _isr0x17(), _isr0x18(), _isr0x19(), _isr0x1a(), _isr0x1b(), _isr0x1c(), _isr0x1d(), _isr0x1e(), _isr0x1f(), _isr0x20(), _isr0x21(), _isr0x22(), _isr0x23(), _isr0x24(), _isr0x25(), _isr0x26(), _isr0x27(), _isr0x28(), _isr0x29(), _isr0x2a(), _isr0x2b(), _isr0x2c(), _isr0x2d(), _isr0x2e(), _isr0x2f(), _isr0x30(), _isr0x31(), _isr0x32(), _isr0x33(), _isr0x34(), _isr0x35(), _isr0x36(), _isr0x37(), _isr0x38(), _isr0x39(), _isr0x3a(), _isr0x3b(), _isr0x3c(), _isr0x3d(), _isr0x3e(), _isr0x3f(), _isr0x40(), _isr0x41(), _isr0x42(), _isr0x43(), _isr0x44(), _isr0x45(), _isr0x46(), _isr0x47(), _isr0x48(), _isr0x49(), _isr0x4a(), _isr0x4b(), _isr0x4c(), _isr0x4d(), _isr0x4e(), _isr0x4f(), _isr0x50(), _isr0x51(), _isr0x52(), _isr0x53(), _isr0x54(), _isr0x55(), _isr0x56(), _isr0x57(), _isr0x58(), _isr0x59(), _isr0x5a(), _isr0x5b(), _isr0x5c(), _isr0x5d(), _isr0x5e(), _isr0x5f(), _isr0x60(), _isr0x61(), _isr0x62(), _isr0x63(), _isr0x64(), _isr0x65(), _isr0x66(), _isr0x67(), _isr0x68(), _isr0x69(), _isr0x6a(), _isr0x6b(), _isr0x6c(), _isr0x6d(), _isr0x6e(), _isr0x6f(), _isr0x70(), _isr0x71(), _isr0x72(), _isr0x73(), _isr0x74(), _isr0x75(), _isr0x76(), _isr0x77(), _isr0x78(), _isr0x79(), _isr0x7a(), _isr0x7b(), _isr0x7c(), _isr0x7d(), _isr0x7e(), _isr0x7f(), _isr0x80(), _isr0x81(), _isr0x82(), _isr0x83(), _isr0x84(), _isr0x85(), _isr0x86(), _isr0x87(), _isr0x88(), _isr0x89(), _isr0x8a(), _isr0x8b(), _isr0x8c(), _isr0x8d(), _isr0x8e(), _isr0x8f(), _isr0x90(), _isr0x91(), _isr0x92(), _isr0x93(), _isr0x94(), _isr0x95(), _isr0x96(), _isr0x97(), _isr0x98(), _isr0x99(), _isr0x9a(), _isr0x9b(), _isr0x9c(), _isr0x9d(), _isr0x9e(), _isr0x9f(), _isr0xa0(), _isr0xa1(), _isr0xa2(), _isr0xa3(), _isr0xa4(), _isr0xa5(), _isr0xa6(), _isr0xa7(), _isr0xa8(), _isr0xa9(), _isr0xaa(), _isr0xab(), _isr0xac(), _isr0xad(), _isr0xae(), _isr0xaf(), _isr0xb0(), _isr0xb1(), _isr0xb2(), _isr0xb3(), _isr0xb4(), _isr0xb5(), _isr0xb6(), _isr0xb7(), _isr0xb8(), _isr0xb9(), _isr0xba(), _isr0xbb(), _isr0xbc(), _isr0xbd(), _isr0xbe(), _isr0xbf(), _isr0xc0(), _isr0xc1(), _isr0xc2(), _isr0xc3(), _isr0xc4(), _isr0xc5(), _isr0xc6(), _isr0xc7(), _isr0xc8(), _isr0xc9(), _isr0xca(), _isr0xcb(), _isr0xcc(), _isr0xcd(), _isr0xce(), _isr0xcf(), _isr0xd0(), _isr0xd1(), _isr0xd2(), _isr0xd3(), _isr0xd4(), _isr0xd5(), _isr0xd6(), _isr0xd7(), _isr0xd8(), _isr0xd9(), _isr0xda(), _isr0xdb(), _isr0xdc(), _isr0xdd(), _isr0xde(), _isr0xdf(), _isr0xe0(), _isr0xe1(), _isr0xe2(), _isr0xe3(), _isr0xe4(), _isr0xe5(), _isr0xe6(), _isr0xe7(), _isr0xe8(), _isr0xe9(), _isr0xea(), _isr0xeb(), _isr0xec(), _isr0xed(), _isr0xee(), _isr0xef(), _isr0xf0(), _isr0xf1(), _isr0xf2(), _isr0xf3(), _isr0xf4(), _isr0xf5(), _isr0xf6(), _isr0xf7(), _isr0xf8(), _isr0xf9(), _isr0xfa(), _isr0xfb(), _isr0xfc(), _isr0xfd(), _isr0xfe(), _isr0xff();
 
-/*
-    Creates a Gate Descriptor with the given values.
+/*!
+    @brief Creates a Gate Descriptor with the given values.
 
-    For information about the descriptors structure visit take a look at:
+    For information about the descriptors structure take a look at:
         https://wiki.osdev.org/Interrupt_Descriptor_Table#Structure_on_x86-64
 
     @param target Pointer to the IDT descriptor.
@@ -18,7 +18,7 @@ extern void _isr0x00(), _isr0x01(), _isr0x02(), _isr0x03(), _isr0x04(), _isr0x05
     @param ist Interrupt Stack Table ???
     @param attributes Gate Type and CPU Privilege Levels
 */
-void idt_create_entry(struct idt_gate_descriptor *target, uint64_t offset, uint16_t segment_selector, uint8_t ist, uint8_t attributes)
+static void idt_create_entry(struct idt_gate_descriptor *target, uint64_t offset, uint16_t segment_selector, uint8_t ist, uint8_t attributes)
 {
     target->offset_low = offset & 0xffff;
     target->offset_mid = (offset >> 16) & 0xffff;
@@ -35,21 +35,15 @@ void idt_create_entry(struct idt_gate_descriptor *target, uint64_t offset, uint1
     target->reserved = 0;
 }
 
-/*
-    Initializes a Interrupt Descriptor Table (IDT).
+/*!
+    @brief Initializes an Interrupt Descriptor Table (IDT).
 
-    Right now it creates an empty IDT.
+    Initialized an Interrupt Descriptor Table (IDT) with 256 interrupt gates pointing to the assembly stubs for interrupt handling.
 */
 void idt_init(void)
 {
     memset(idt, 0, (sizeof(struct idt_gate_descriptor) * IDT_ENTRIES));
 
-    // Add entries here.
-    // for (size_t i = 0; i < IDT_ENTRIES; i++)
-    // {
-    //     idt_create_entry(&idt[i], _isr0, 0x8, 0, IDT_ATTRIBUTES(0, IDT_GATE_TYPE_INT_GATE));
-    // }
-    // idt_create_entry(&idt[3], _isr3, 0x8, 0, IDT_ATTRIBUTES(0, IDT_GATE_TYPE_INT_GATE));
     idt_create_entry(&idt[0], (uint64_t)_isr0x00, 0x8, 0, IDT_ATTRIBUTES(0, IDT_GATE_TYPE_INT_GATE));
     idt_create_entry(&idt[1], (uint64_t)_isr0x01, 0x8, 0, IDT_ATTRIBUTES(0, IDT_GATE_TYPE_INT_GATE));
     idt_create_entry(&idt[2], (uint64_t)_isr0x02, 0x8, 0, IDT_ATTRIBUTES(0, IDT_GATE_TYPE_INT_GATE));
@@ -308,8 +302,8 @@ void idt_init(void)
     idt_create_entry(&idt[255], (uint64_t)_isr0xff, 0x8, 0, IDT_ATTRIBUTES(0, IDT_GATE_TYPE_INT_GATE));
 }
 
-/*
-    Loads a IDT into the CPU.
+/*!
+    @brief Loads an IDT into the CPU.
 
     Builds a pointer to the IDT and loads it into the CPU.
 

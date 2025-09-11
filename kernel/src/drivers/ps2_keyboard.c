@@ -180,8 +180,8 @@ static key_code_t ps2_kbd_mapping_scancode_set_1_to_keycode[256] =
 // Enable "-Woverride-init" again.
 #pragma GCC diagnostic pop 
 
-/*
-    Translates scan codes to key codes.
+/*!
+    @brief Translates scan codes to key codes.
 
     Handles translation from raw scan codes to key codes.
     For now only scan code set 1 is implemented.
@@ -214,8 +214,8 @@ static inline key_code_t ps2_kbd_scancode_to_keycode(uint8_t scancode, ps2_kbd_s
     }
 }
 
-/*
-    Sets the modifier flags for a key event.
+/*!
+    @brief Sets the modifier flags for a key event.
 
     Sets and clears modifier flags (shift, caps lock, alt, altgr, strg, left super and right super) for a key event.
 
@@ -345,8 +345,8 @@ static inline void ps2_kbd_set_modifiers(struct key_event_t *key_event)
     return;
 }
 
-/*
-    Selects a scancode set.
+/*!
+    @briefSelects a scancode set.
 
     Selects what scancode set the keyboard should use.
     After three failed attempts an error is returned.
@@ -388,13 +388,10 @@ static ps2_kbd_error_codes_t ps2_kbd_set_scancode_set(uint8_t port, ps2_kbd_scan
     return PS2_KBD_OK;
 }
 
-/*
-    Receives scancodes (scancode set 1) from the keyboard and translates them to key events.
-
-    This function acts as a finite state machine.
-    The incoming byte is read and depending on the current state actions are performed.
-
-    These include:
+/*!
+    @brief Receives scancodes (scancode set 1) from the keyboard and translates them to key events.
+    
+    The incoming byte is read and depending on the current state actions are performed:
     - recognizing prefixes (0xe0, 0xe1, ...) and switching states accordingly
     - recognizing complete scancodes, translating them to key events, appending them to a ring buffer & switching back to "normal" state
     - switching to an "invalid" state whenever unexpected bytes are received
@@ -591,10 +588,10 @@ void ps2_kbd_irq_callback(void)
     ps2_kbd_state = PS2_KBD_STATE_NORMAL;
 }
 
-/*
-    Initializes the keyboard.
+/*!
+    @brief Initializes the keyboard.
 
-    Selects scancode set 1 and enables the IRQ that is used for keyboard interrupts.
+    Selects scancode set 1 and enables scanning.
 
     @param port Specifies at which PS/2 port the device to identify is connected.
     @returns PS2_KBD_ERROR_ALREADY_INITIALIZED if the driver was initialized before,

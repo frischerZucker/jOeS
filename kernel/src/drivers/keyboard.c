@@ -7,8 +7,8 @@ uint8_t kbd_key_event_buffer_capacity = KBD_KEY_EVENT_BUFFER_SIZE;
 uint8_t kbd_key_event_buffer_size = 0;
 uint8_t kbd_key_event_buffer_front = 0;
 
-/*
-    Appends a key event to the key event buffer.
+/*!
+    @brief Appends a key event to the key event buffer.
 
     Appends a key event to the key event ring buffer. If the buffer is full, old values are overwritten.
 
@@ -30,10 +30,11 @@ void kbd_append_key_event_to_buffer(struct key_event_t *key_event)
     }
 }
 
-/*
-    Retrieves the next key event from the key event buffer.
+/*!
+    @brief Retrieves the next key event from the key event buffer.
 
     Tries to read a key event from the key event ring buffer.
+    On success the key event is read an removed from the buffer.
     If the buffer is empty, the function returns an error code and does not modify *dest.
 
     @param dest Pointer to where the key event will be stored.
@@ -54,8 +55,8 @@ kbd_error_codes_t kbd_get_key_event_from_buffer(struct key_event_t *dest)
     return KBD_ERROR_KEY_EVENT_BUFFER_OK;
 }
 
-/*
-    Converts a key event into its corresponding ASCI character(s).
+/*!
+    @brief Converts a key event into its corresponding ASCII character(s).
 
     Translates a key_event_t into a character string based on current modifier
     flags and the german keyboard layout. Only key press events produce output. 

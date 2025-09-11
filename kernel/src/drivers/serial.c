@@ -24,8 +24,8 @@
 
 #define SERIAL_TEST_BYTE 0x69
 
-/*
-    Sends a byte via the serial port.
+/*!
+    @brief Sends a byte via the serial port.
 
     Waits until the transmit buffer is empty and sends a byte.
 
@@ -40,8 +40,8 @@ void serial_send_byte(uint16_t port, uint8_t data)
     port_write_byte(port, data);
 }
 
-/*
-    Reads a byte from the serial port.
+/*!
+    @brief Reads a byte from the serial port.
 
     Waits until there is data in the receive buffer and reads a byte.
 
@@ -56,8 +56,8 @@ uint8_t serial_read_byte(uint16_t port)
     return port_read_byte(port);
 }
 
-/*
-    Sends a string via the serial port.
+/*!
+    @brief Sends a string via the serial port.
 
     @param port Serial port.
     @param data Pointer to the string to be sent.
@@ -71,8 +71,8 @@ void serial_print(uint16_t port, char *data)
     }
 }
 
-/*
-    Sends a string via the serial port adding a new line character ('\n').
+/*!
+    @brief Sends a string via the serial port adding a new line character ('\n') at the end.
 
     @param port Serial port.
     @param data Pointer to the string to be sent.
@@ -83,13 +83,13 @@ void serial_print_line(uint16_t port, char *data)
     serial_send_byte(port, '\n');
 }
 
-/*
-    Reads a line from the serial port.
+/*!
+    @brief Reads a line from the serial port.
 
-    Reads bytes from the serial port until a new line character ('\n') is received or the buffer length is reached.
+    Reads bytes from the serial port until a new line character ('\n') is received or the buffers length is reached.
     
     @param port Serial Port.
-    @param dest Pointer to the location the string should be written.
+    @param dest Pointer to the location the string should be written to.
     @param buffer_size Size of the buffer pointed to by dest.
 */
 void serial_read_line(uint16_t port, char *dest, size_t buffer_size)
@@ -111,8 +111,8 @@ void serial_read_line(uint16_t port, char *dest, size_t buffer_size)
     dest[i + 1] = '\0';
 }
 
-/*
-    Initializes a serial port.
+/*!
+    @brief Initializes a serial port.
 
     Initializes and tests a serial port with the given baud rate and mode.
 
@@ -154,13 +154,13 @@ serial_error_codes_t serial_init(uint16_t port, uint32_t baud_rate, uint8_t mode
     return SERIAL_OK;
 }
 
-/*
-    Checks if a serial port is working.
+/*!
+    @brief Checks if a serial port is working.
 
     Sets the serial port to loopback mode, sends a byte and checks if it receives the same byte.
 
     @param port Serial port to test.
-    @returns SERIAL_OK (0) if the sent byte is received, otherwise SERIAL_LOOPBACK_FAILED (2).
+    @returns SERIAL_OK if the sent byte is received, otherwise SERIAL_LOOPBACK_FAILED.
 */
 serial_error_codes_t serial_test(uint16_t port)
 {

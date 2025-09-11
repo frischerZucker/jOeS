@@ -7,10 +7,10 @@
 #define COLOR_BLACK 0x000000
 #define COLOR_WHITE 0xffffff
 
-/*
-    Fills the entire framebuffer with a solid color.
+/*!
+    @brief Fills the entire framebuffer with a solid color.
 
-    Iterates over every pixel and writes the given 32-bit color to it.
+    Iterates over every pixel and sets it to the color.
 
     @param framebuffer Pointer to the limine_framebuffer to clear.
     @param color 24-bit RGB color value to fill the screen with.
@@ -29,8 +29,8 @@ void framebuffer_clear(struct limine_framebuffer *framebuffer, uint32_t color)
     }
 }
 
-/*
-    Draws a character on the framebuffer into the framebuffer at the given coordinates.
+/*!
+    @brief Draws a character on the framebuffer into the framebuffer at the given coordinates.
 
     Renders a character by scanning a doubled glyph cell. For each pixel in that cell, checks the bitmap from CHARSET(c). 
     If the bit is set, writes the color to the framebuffer at the computed (x,y) position.

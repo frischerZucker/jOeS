@@ -120,8 +120,8 @@ static bool ps2_port_1_works = false;
 static bool ps2_port_2_works = false;
 struct ps2_device_status ps2_ports = {false, 0, false, 0};
 
-/*
-    Checks if the controllers output buffer (incoming data) is full.
+/*!
+    @brief Checks if the controllers output buffer (incoming data) is full.
 
     @returns True if buffer is full, otherwise false.
 */
@@ -130,8 +130,8 @@ static inline bool ps2_output_buffer_full()
     return port_read_byte(PS2_STATUS) & 1;
 }
 
-/*
-    Checks if the controllers input buffer (data to be sent) is full.
+/*!
+    @brief Checks if the controllers input buffer (data to be sent) is full.
 
     @returns True if buffer is full, otherwise false.
 */
@@ -140,8 +140,8 @@ static inline bool ps2_input_buffer_full()
     return port_read_byte(PS2_STATUS) & (1 << 1);
 }
 
-/*
-    Checks if the device type corresponds to a keyboard.
+/*!
+    @brief Checks if the device type corresponds to a keyboard.
 
     Compares the device type to all known keyboards.
     
@@ -165,8 +165,8 @@ static inline bool ps2_device_is_keyboard(int32_t device_type)
     }
 }
 
-/*
-    Checks if the device type corresponds to a mouse.
+/*!
+    @brief Checks if the device type corresponds to a mouse.
 
     Compares the device type to all known mice.
     
@@ -190,8 +190,8 @@ static inline bool ps2_device_is_mouse(int32_t device_type)
     }
 }
 
-/*
-    Sends a command to the PS/2 controller.
+/*!
+    @brief Sends a command to the PS/2 controller.
 
     @param command Command to send to the controller.
 */
@@ -203,8 +203,8 @@ static void ps2_send_command(uint8_t command)
     port_write_byte(PS2_COMMAND, command);
 }
 
-/*
-    Flushes the controllers output buffer and discards its content.
+/*!
+    @brief Flushes the controllers output buffer and discards its content.
 */
 static void ps2_flush_output_buffer(void)
 {
@@ -214,8 +214,8 @@ static void ps2_flush_output_buffer(void)
     }
 }
 
-/*
-    Sends a byte to a to the PS/2 with timeout but without response handling.
+/*!
+    @brief Sends a byte to a to the PS/2 with timeout but without response handling.
 
     Waits until the controller's input buffer is empty, so that new data can be sent.
     If the buffer stays full for more the PS2_TIMEOUT iterations, assumes an error and abborts.
@@ -249,8 +249,8 @@ static ps2_error_codes_t ps2_raw_send_byte(uint8_t port, uint8_t data)
     return PS2_OK;
 }
 
-/*
-    Sends a byte to a PS/2 device with timeout and response handling.
+/*!
+    @brief Sends a byte to a PS/2 device with timeout and response handling.
 
     Attempts to send data up to PS2_MAX_RESENDS times.
     Sends the data using ps2_raw_send_byte() and checks the devices response. 
@@ -300,8 +300,8 @@ ps2_error_codes_t ps2_send_byte(uint8_t port, uint8_t data)
     return PS2_ERROR_NO_ACK;
 }
 
-/*
-    Receives a byte from the PS/2 port with timeout handling.
+/*!
+    @brief Receives a byte from the PS/2 port with timeout handling.
 
     Waits until the controller's output buffer contains data to read.
     If the buffer stays empty for more the PS2_TIMEOUT iterations, assumes an error, writes 0 to *dest and abborts.
@@ -330,8 +330,8 @@ ps2_error_codes_t ps2_receive_byte(uint8_t *dest)
     return PS2_OK;
 }
 
-/*
-    Resets a device connected to a PS/2 port.
+/*!
+    @brief Resets a device connected to a PS/2 port.
 
     Sends a reset command (0xff) to a PS/2 device and validates its response.
 
@@ -365,8 +365,8 @@ ps2_error_codes_t ps2_reset_device(uint8_t port)
     }
 }
 
-/*
-    Detects the type of a device connected to a PS/2 port.
+/*!
+    @brief Detects the type of a device connected to a PS/2 port.
 
     Detects the type of a device connected to a PS/2 port by sending an identify command.
     Side effect: Disables scanning for the device.
@@ -429,8 +429,8 @@ ps2_error_codes_t ps2_identify_device(uint8_t port, int32_t *device_type)
     return PS2_OK;
 }
 
-/*
-    Initializes the PS/2 controller.
+/*!
+    @brief Initializes the PS/2 controller.
 
     Initializes the PS/2 controller and checks if a second port exists.
     Performs a controller test as well as interface tests for existing ports.

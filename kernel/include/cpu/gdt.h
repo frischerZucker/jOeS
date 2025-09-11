@@ -1,3 +1,21 @@
+/*!
+    @file gdt.h
+
+    @brief Global Descriptor Table (GDT) setup for x86_64 systems.
+    
+    Defines structures and functions for initializing and installing a GDT for a flat memory model.
+    Assumes a standard five-entry layout with segments for:
+    - null
+    - kernel code
+    - kernel data
+    - user code
+    - user data
+    
+    Each segment spans the full 4 GiB address space with 4 kiB granularity.
+
+    @author frischerZucker
+ */
+
 #ifndef GDT_H
 #define GDT_H
 
@@ -23,10 +41,30 @@ struct gdt_ptr
 
 extern struct gdt_descriptor gdt[GDT_NUM_ENTRIES];
 
-void gdt_create_segment_descriptor(struct gdt_descriptor *target, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags);
+/*!
+    @brief Initializes a Global Descriptor Table (GDT) for a flat memory model.
 
+    Sets up the following descriptors:
+    - Null descriptor
+    - Kernel code segment
+    - Kernel data segment
+    - User code segment
+    - User data segment
+
+    Each non-null segment covers the full 4 GiB address space with 4 KiB granularity.
+
+    @returns void
+*/
 void gdt_init(void);
 
+/*!
+    @brief Loads a GDT into the CPU and reloads segment registers.
+
+    Tells the CPU where it finds the GDT to load and loads it into the registers.
+
+    @param target GDT to load.
+    @returns void
+*/
 void gdt_install(struct gdt_descriptor *target);
 
 #endif // GDT_H

@@ -2,6 +2,14 @@
 
 #include "cpu/port_io.h"
 
+// Adresses of the two PICs ports.
+#define PIC1 0x20
+#define PIC1_COMMAND PIC1
+#define PIC1_DATA (PIC1 + 1)
+#define PIC2 0xa0
+#define PIC2_COMMAND PIC2
+#define PIC2_DATA (PIC2 + 1)
+
 #define PIC_ICW1_INIT (1 << 4)
 #define PIC_ICW1_ICW4_NEEDED 1
 #define PIC_ICW1_CASCADE_MODE (0 << 1)
@@ -13,8 +21,8 @@
 
 #define PIC_EOI (1 << 5)    // End-Of-Interrupt command.
 
-/*
-    Sends an End-Of-Interrupt message to the PICs.
+/*!
+    @brief Sends an End-Of-Interrupt message to the PICs.
 
     If the IRQ came from PIC2 (irq > 7), an EOI message is sent to both PIC1 and PIC2.
     Otherwise it is sent only to PIC1.
@@ -30,8 +38,8 @@ void pic_send_eoi(uint8_t irq)
     port_write_byte(PIC1_COMMAND, PIC_EOI);
 }
 
-/*
-    Enables an IRQ.
+/*!
+    @brief Enables an IRQ.
 
     Enables an IRQ by clearing its bit in the Interrupt Mask Register of its PIC.
 
@@ -52,8 +60,8 @@ void pic_enable_irq(uint8_t irq)
     port_write_byte(port, mask);
 }
 
-/*
-    Disables an IRQ.
+/*!
+    @brief Disables an IRQ.
 
     Disables an IRQ by setting its bit in the Interrupt Mask Register of its PIC.
 
@@ -74,8 +82,8 @@ void pic_disable_irq(uint8_t irq)
     port_write_byte(port, mask); 
 }
 
-/*
-    Initializes both PICs.
+/*!
+    @brief Initializes both PICs.
 
     Initializes both PICs in cascade mode with PIC2 at IRQ2 of PIC1.
     Also remaps their IRQs to the given offsets.

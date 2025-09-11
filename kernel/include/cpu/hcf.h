@@ -1,8 +1,16 @@
+/*!
+    @file hcf.h
+
+    @brief Defines a Halt-And-Catch-Fire function.
+
+    @author frischerZucker
+*/
+
 #ifndef HCF_H
 #define HCF_H
 
-/*
-    Halt-And-Catch-Fire function.
+/*!
+    @brief Halt-And-Catch-Fire function.
 
     Stops all action and does nothing.
 */
