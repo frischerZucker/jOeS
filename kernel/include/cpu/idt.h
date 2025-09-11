@@ -29,8 +29,6 @@ struct idt_ptr
 
 extern struct idt_gate_descriptor idt[IDT_ENTRIES];
 
-void idt_create_entry(struct idt_gate_descriptor *target, uint64_t offset, uint16_t segment_selector, uint8_t ist, uint8_t attributes);
-
 void idt_init(void);
 void idt_install(struct idt_gate_descriptor *target);
 

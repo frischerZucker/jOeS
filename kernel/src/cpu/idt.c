@@ -18,7 +18,7 @@ extern void _isr0x00(), _isr0x01(), _isr0x02(), _isr0x03(), _isr0x04(), _isr0x05
     @param ist Interrupt Stack Table ???
     @param attributes Gate Type and CPU Privilege Levels
 */
-void idt_create_entry(struct idt_gate_descriptor *target, uint64_t offset, uint16_t segment_selector, uint8_t ist, uint8_t attributes)
+static void idt_create_entry(struct idt_gate_descriptor *target, uint64_t offset, uint16_t segment_selector, uint8_t ist, uint8_t attributes)
 {
     target->offset_low = offset & 0xffff;
     target->offset_mid = (offset >> 16) & 0xffff;
