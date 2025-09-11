@@ -6,10 +6,6 @@
 
 #define PIT_COMMAND 0x43
 
-#define PIT_SC_COUNTER_0 0
-#define PIT_SC_COUNTER_2 (1 << 7)
-#define PIT_SC_READ_BACK ((1 << 7) | (1 << 6))
-
 #define PIT_RW_LOW_HIGH ((1 << 5) | (1 << 4))
 #define PIT_RW_LOW_ONLY (1 << 4)
 #define PIT_RW_HIGH_ONLY (1 << 5)

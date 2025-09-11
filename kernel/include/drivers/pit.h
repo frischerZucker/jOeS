@@ -20,6 +20,10 @@
 #define PIT_CHANNEL_0 0x40
 #define PIT_CHANNEL_2 0x42
 
+#define PIT_SC_COUNTER_0 0
+#define PIT_SC_COUNTER_2 (1 << 7)
+#define PIT_SC_READ_BACK ((1 << 7) | (1 << 6))
+
 #define PIT_MODE_INT_ON_TERMINAL_COUNT 0
 #define PIT_MODE_HARDWARE_TRIG_ONESHOT (1 << 1)
 #define PIT_MODE_RATE_GEN (1 << 2)
