@@ -10,6 +10,7 @@
     - kernel data
     - user code
     - user data
+    
     Each segment spans the full 4 GiB address space with 4 kiB granularity.
 
     @author frischerZucker
