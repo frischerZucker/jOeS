@@ -17,7 +17,7 @@ extern void gdt_load_segments(void);
     @param flags Flags including granularity and operand-size bits.
     @returns void
 */
-void gdt_create_segment_descriptor(struct gdt_descriptor *target, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags)
+static void gdt_create_segment_descriptor(struct gdt_descriptor *target, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags)
 {
     target->base_low = base & 0xFFFF;
     target->base_mid = (base >> 16) & 0xFF;

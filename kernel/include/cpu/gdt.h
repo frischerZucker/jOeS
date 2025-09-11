@@ -23,8 +23,6 @@ struct gdt_ptr
 
 extern struct gdt_descriptor gdt[GDT_NUM_ENTRIES];
 
-void gdt_create_segment_descriptor(struct gdt_descriptor *target, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags);
-
 void gdt_init(void);
 
 void gdt_install(struct gdt_descriptor *target);
