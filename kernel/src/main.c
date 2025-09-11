@@ -24,10 +24,6 @@ __attribute__((used, section(".limine_requests"))) static volatile struct limine
     .id = LIMINE_FRAMEBUFFER_REQUEST,
     .revision = 0};
 
-__attribute__((used, section(".limine_requests"))) static volatile struct limine_memmap_request memmap_request = {
-    .id = LIMINE_MEMMAP_REQUEST,
-    .revision = 0};
-
 __attribute__((used, section(".limine_requests_start"))) static volatile LIMINE_REQUESTS_START_MARKER;
 
 __attribute__((used, section(".limine_requests_end"))) static volatile LIMINE_REQUESTS_END_MARKER;
@@ -71,23 +67,8 @@ void kmain(void)
     // It's the same as with the GDT.. I think if this code is printed, the IDT was loaded correctly.
     printf("IDT: IDT loaded successfully.\n");
 
-    // Ensure we really got a memory map.
-    if (memmap_request.response == NULL)
-    {
-        printf("Could not get Memory Map :(\n");
-        hcf();
-    }
-    // Get the memory map and print its entries.
-    struct limine_memmap_response *memmap = memmap_request.response;
-    uint64_t memmap_num_entries = memmap->entry_count;
-    printf("Memory Map:\nBase\tLength\tType\n");
-    for (size_t i = 0; i < memmap_num_entries; i++)
-    {
-        printf("%p\t%u\t%d\n", memmap->entries[i]->base, memmap->entries[i]->length, memmap->entries[i]->type);
-    }
-
     // Initialize the PIC and enable interrupts.
-    pic_init(0x20, 0x28);
+    pic_init(0x20, 0x28);    
     asm("sti");
     pit_init_channel(PIT_CHANNEL_0, 1000, PIT_SC_COUNTER_0 | PIT_MODE_SQUARE_WAVE);
     pic_enable_irq(0);
@@ -99,7 +80,7 @@ void kmain(void)
     }
 
     serial_print_line(COM1, "If you can see this, sending strings via serial works! :D\n");
-
+    
     ps2_init_controller();
 
     hcf();
