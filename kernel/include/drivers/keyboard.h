@@ -1,3 +1,15 @@
+/*!
+    @file keyboard.h
+
+    @brief Keyboard event interface.
+    
+    Defines key codes, event types, and modifier masks for handling keyboard input.
+    Uses a ring buffer to store key events and provides functions to retrieve and convert them to ASCII characters, as well as adding them to the buffer.
+    Assumes a German QWERTZ layout for mapping key events to characters.
+
+    @author frischerZucker
+ */
+
 #ifndef KEYBOARD_H
 #define KEYBOARD_H
 
@@ -6,7 +18,11 @@
 
 #define KBD_KEY_EVENT_BUFFER_SIZE 32
 
-// Keycodes. I use a german keyboard layout (QWERTZ), so the keycodes are the main symbols on a german keyboard.
+/*!
+    @brief Key codes to identify keys. 
+    
+    @note I use a german keyboard layout (QWERTZ), so the keycodes are the main symbols on a german keyboard.
+*/
 typedef enum key_codes
 {
     // Default for unknown keys.
@@ -149,6 +165,9 @@ typedef enum key_codes
     KEY_WAKE
 } key_code_t;
 
+/*!
+    @brief Possible types of key events (what action generated it).
+*/
 typedef enum key_event_types
 {
     KEY_EVENT_TYPE_UNDEFINED,
@@ -166,13 +185,22 @@ typedef enum key_event_types
 #define KBD_MODIFIER_MASK_LSUPER (1 << 7)
 #define KBD_MODIFIER_MASK_RSUPER (1 << 8)
 
+/*!
+    @brief Structure containing information about key events.
+*/
 struct key_event_t
 {
+    /// @brief Key that generated the key event.
     key_code_t keycode;
+    /// @brief Type of key event.
     key_event_type_t pressed;
+    /// @brief Status of modifier keys.
     uint16_t modifiers;
 };
 
+/*!
+    @brief Error codes used by the interface.
+*/
 typedef enum kbd_error_codes {
     KBD_ERROR_KEY_EVENT_BUFFER_OK = 0,
     KBD_ERROR_KEY_EVENT_BUFFER_EMPTY,
@@ -181,9 +209,38 @@ typedef enum kbd_error_codes {
 
 extern struct key_event_t kbd_key_event_buffer[KBD_KEY_EVENT_BUFFER_SIZE];
 
+/*!
+    @brief Appends a key event to the key event buffer.
+
+    Appends a key event to the key event ring buffer. If the buffer is full, old values are overwritten.
+
+    @param key_event Pointer to the key event to append.
+*/
 void kbd_append_key_event_to_buffer(struct key_event_t *key_event);
+
+/*!
+    @brief Retrieves the next key event from the key event buffer.
+
+    Tries to read a key event from the key event ring buffer.
+    On success the key event is read an removed from the buffer.
+    If the buffer is empty, the function returns an error code and does not modify *dest.
+
+    @param dest Pointer to where the key event will be stored.
+    @returns KBD_KEY_EVENT_BUFFER_OK on success, KBD_KEY_EVENT_BUFFER_EMPTY if the buffer is empty.
+*/
 kbd_error_codes_t kbd_get_key_event_from_buffer(struct key_event_t *dest);
 
+/*!
+    @brief Converts a key event into its corresponding ASCII character(s).
+
+    Translates a key_event_t into a character string based on current modifier
+    flags and the german keyboard layout. Only key press events produce output. 
+    Key releases are ignored. Returns an empty string if the key was released
+    or no valid character mapping exists.
+
+    @param key_event Pointer to the key event to convert.
+    @returns Pointer to a character string (may be empty).
+*/
 char * kbd_key_event_to_ascii(struct key_event_t *key_event);
 
 #endif // KEYBOARD_H
