@@ -1,3 +1,15 @@
+/*!
+    @file idt.h
+
+    @brief Interrupt Descriptor Table (IDT) setup for x86_64 systems.
+    
+    Defines structures and functions for initializing and installing the IDT, which maps hardware and software interrupts to handler routines.
+    Assumes a 256-entry table with support for both interrupt and trap gates.
+    Includes macros for gate type and attribute configuration.
+
+    @author frischerZucker
+ */
+
 #ifndef IDT_H
 #define IDT_H
 
@@ -29,7 +41,20 @@ struct idt_ptr
 
 extern struct idt_gate_descriptor idt[IDT_ENTRIES];
 
+/*!
+    @brief Initializes an Interrupt Descriptor Table (IDT).
+
+    Initialized an Interrupt Descriptor Table (IDT) with 256 interrupt gates pointing to the assembly stubs for interrupt handling.
+*/
 void idt_init(void);
+
+/*!
+    @brief Loads an IDT into the CPU.
+
+    Builds a pointer to the IDT and loads it into the CPU.
+
+    @param target IDT to load.
+*/
 void idt_install(struct idt_gate_descriptor *target);
 
 #endif // IDT_H
