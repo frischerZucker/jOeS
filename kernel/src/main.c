@@ -28,6 +28,10 @@ __attribute__((used, section(".limine_requests"))) static volatile struct limine
     .id = LIMINE_MEMMAP_REQUEST,
     .revision = 0};
 
+__attribute__((used, section(".limine_requests"))) static volatile struct limine_hhdm_request hhdm_request = {
+    .id = LIMINE_HHDM_REQUEST,
+    .revision = 0};
+
 __attribute__((used, section(".limine_requests_start"))) static volatile LIMINE_REQUESTS_START_MARKER;
 
 __attribute__((used, section(".limine_requests_end"))) static volatile LIMINE_REQUESTS_END_MARKER;
@@ -84,8 +88,18 @@ void kmain(void)
     printf("Memory Map:\nBase\tLength\tType\n");
     for (size_t i = 0; i < memmap_num_entries; i++)
     {
-        printf("%p\t%u\t%d\n", memmap->entries[i]->base, memmap->entries[i]->length, memmap->entries[i]->type);
+        printf("%p\t%p\t%d\n", memmap->entries[i]->base, memmap->entries[i]->length, memmap->entries[i]->type);
     }
+
+    // Ensure we got the hhdm offset.
+    if (hhdm_request.response == NULL)
+    {
+        printf("Could not get HHDM :(\n");
+        hcf();
+    }
+    
+    struct limine_hhdm_response *hhdm_response = hhdm_request.response;
+    printf("hhdm: %p", hhdm_response->offset);
 
     hcf();
 
