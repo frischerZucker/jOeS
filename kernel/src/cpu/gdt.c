@@ -4,8 +4,8 @@ struct gdt_descriptor gdt[GDT_NUM_ENTRIES];
 
 extern void gdt_load_segments(void);
 
-/*
-    Creates a Segment Descriptor entry with the given values.
+/*!
+    @brief Creates a Segment Descriptor entry with the given values.
 
     For information about the descriptors structure visit take a look at:
         https://wiki.osdev.org/Global_Descriptor_Table#Segment_Descriptor
@@ -31,8 +31,8 @@ static void gdt_create_segment_descriptor(struct gdt_descriptor *target, uint32_
     target->limit_high_flags = target->limit_high_flags | ((flags & 0xF) << 4);
 }
 
-/*
-    Initializes a Global Descriptor Table (GDT) for a flat memory model.
+/*!
+    @brief Initializes a Global Descriptor Table (GDT) for a flat memory model.
 
     Sets up the following descriptors:
     - Null descriptor
@@ -59,8 +59,8 @@ void gdt_init(void)
     gdt_create_segment_descriptor(&gdt[4], 0x0, 0xfffff, 0xf2, 0xc);
 }
 
-/*
-    Loads a GDT into the CPU and reloads segment registers.
+/*!
+    @brief Loads a GDT into the CPU and reloads segment registers.
 
     Tells the CPU where it finds the GDT to load and loads it into the registers.
 
