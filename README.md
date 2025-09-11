@@ -1,7 +1,4 @@
 # jOeS
-
-**jOeS** is a hobby project to create an operating system for `x86_64` using C and the [Limine Bootloader](https://github.com/limine-bootloader/limine).
-
 ```
           
          /´´´´´\
@@ -19,30 +16,47 @@
      "Come on, man!"
 ```
 
-## Project Goals
+**jOeS** is a hobby project to create an operating system for `x86_64` using C and the [Limine Bootloader](https://github.com/limine-bootloader/limine).
+My long-term goal is to create an OS that is able to run simple programms, preferrably on real hardware.
+As of now, I managed to write a lil kernel that can handle interrupt, print to a framebuffer. 
+It also includes some drivers for some (partially outdated :|) devices:
+- 8259 PIC
+- 8254 PIT
+- I8042 PS/2 Controller
+- PS/2 Keyboards
+- Serial Controller
 
-~~I got a framebuffer up and running with a simple terminal and a (not quite finished) printf() function! My next goal is to get interrupts working. Let's see how that goes.. :D~~
-So, interrupts are working, I got drivers for PIC, PIT, Serial and the I8042 PS/2 controller.
-The next goal is to write a PS/2 keyboard driver. :) 
-
+The next chapter on this journey will be memory management. I plan on implementing physical and virtual memory managers as my next step.
+Let's see how this will turn out and how long it takes! :D 
 
 ## Project Structure
 ```
 /
+├── doku/                  
+|       ├── html/                   # Project documentation
+|       └── img/                    # Images used in the documentation
 ├── kernel/                    
-|         ├── include/        # kernel headers
-|         ├── linker_scripts/ # kernel linker scripts
-|         ├── src/            # kernel source files
-|         └── GNUmakefile     # kernel makefile
+|         ├── include/           
+|         |          ├── cpu/       # Headers for CPU specific code
+|         |          ├── drivers/   # Driver headers
+|         |          └── *.h        # General headers
+|         ├── linker_scripts/       # kernel linker scripts
+|         ├── src/               
+|         |      ├── cpu/           # Source files for CPU specific code
+|         |      ├── drivers/       # Driver source files
+|         |      └── *.c            # General source files
+|         └── GNUmakefile           # kernel makefile
 ├── libc/                    
-|       ├── include/          # libc headers
-|       ├── stdio/            # stdio.h source files
-|       ├── string/           # string.h source files
-|       └── GNUmakefile       # libc makefile
-├── .gitignore                 
-├── tools/                    # build scripts & additional tools
-├── README.md                 # you are here lol
-└── limine.conf               # limine config file
+|       ├── include/                # libc headers
+|       ├── stdio/                  # stdio.h source files
+|       ├── string/                 # string.h source files
+|       └── GNUmakefile             # libc makefile    
+├── tools/                          # build scripts & additional tools
+├── .gitignore             
+├── Doxyfile                        # Settings for documentation
+├── LICENSE                         # BSD 2-Clause license
+├── limine.conf                     # limine config file
+└── README.md                       # you are here lol
 ```
 
 ## Requirements
@@ -53,6 +67,11 @@ To build and run **jOeS** you need:
 - NASM
 - `qemu-system-x86_64`
 
+If you are using a Linux Distro that uses `apt` as package manager, you can run check for missing dependencies and install them by running:
+``` bash
+./tools/check-dependencies.sh
+```
+
 For some of the additional tools you also need:
 - Python
 
@@ -60,15 +79,15 @@ For some of the additional tools you also need:
 
 To build libc run the following scripts:
 ``` bash
-./headers.sh
-./build-libc.sh
+./tools/headers.sh
+./tools/build-libc.sh
 ```
 
 To build the kernel, create an iso and run it use:
 ``` bash
-./build-kernel.sh
-./iso.sh
-./run.sh
+./tools/build-kernel.sh
+./tools/iso.sh
+./tools/run.sh
 ```
 
 Or simply use the combined script to do everything at once:
