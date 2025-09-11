@@ -5,8 +5,8 @@
 
 static struct terminal terminal;
 
-/*
-    Initializes teh terminal structure.
+/*!
+    @brief Initializes the terminal structure.
 
     Sets the cursor position to the top-left corner, stores the character size and the framebuffer for drawing characters.
 
@@ -27,8 +27,8 @@ void terminal_init(struct limine_framebuffer *framebuffer, uint8_t char_w, uint8
     terminal.framebuffer = framebuffer;
 }
 
-/*
-    Sets the foreground color used to render text.
+/*!
+    @brief Sets the foreground color used to render text.
 
     @param color 24-bit RGB color value.
 */
@@ -37,16 +37,16 @@ void terminal_set_color(uint32_t color)
     terminal.fg_color = color;
 }
 
-/*
-    Draws a single character on the screen and updates the cursor position.
+/*!
+    @brief Draws a single character on the screen and updates the cursor position.
 
     Handles whitespace and basic control characters:
     - Space (' ') moves the cursor right without drawing.
     - Tab ('\t) advances the dursor to the next tab stop.
     - NewLine ('\n) moves the cursor to the beginning of the next line.
-    - Printable characters (32 - 126) are drawn to the framebuffer.
+    - Printable characters (32 - 126) are drawn to the framebuffer using \ref framebuffer_draw_char().
 
-    Returns an error, if the character is not printable.
+    Returns an error, if the character is not handled by this function.
     Automatically moves to the next line if the cursor exceeds the screen width.
 
     @param c ASCII character to draw.
@@ -102,10 +102,10 @@ terminal_error_codes_t terminal_put_char(uint8_t c)
     return TERMINAL_OK;
 }
 
-/*
-    Writes a string of characters to the terminal.
+/*!
+    @brief Writes a string of characters to the terminal.
 
-    Iterates through the input string and prints it using 'terminal_put_char()'.
+    Iterates through the input string and prints it by calling \ref terminal_put_char() for every character.
 
     @param str Pointer to the character array to write.
     @param len Length of the string in characters.
