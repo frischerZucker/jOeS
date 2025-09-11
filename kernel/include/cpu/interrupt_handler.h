@@ -1,3 +1,16 @@
+/*!
+    @file interrupt_handler.h
+
+    @brief Central interrupt and exception handling.
+    
+    Defines interrupt vectors, descriptions, and stack layout for handling CPU exceptions and interrupts.
+    Includes the main interrupt handling logic.
+    Assumes standard x86_64 interrupt behavior and integrates with assembly stubs
+    that push a complete register and metadata frame before calling the C interrupt handler.
+
+    @author frischerZucker
+ */
+
 #ifndef INTERRUPT_HANDLER_H
 #define INTERRUPT_HANDLER_H
 
@@ -7,6 +20,9 @@
 #define INT_DESCRIPTION_EXTERNAL 23
 #define INT_DESCRIPTION_UNKNOWN_EXCEPTION 24
 
+/*!
+    Interrupt vectors.
+*/
 enum interrupts
 {
     INT_DIVIDE_ERR,
@@ -267,6 +283,9 @@ enum interrupts
     INT_EXT_INT224
 };
 
+/*!
+    @brief Strings describing interrupts.
+*/
 static char *interrupt_descriptions[25] = {
     "Divide Error.\n",
     "Debug Exception.\n",
@@ -295,6 +314,12 @@ static char *interrupt_descriptions[25] = {
     "An unknown Exception / Interrupt occured: int=%d, errno=%d\n"
 };
 
+/*!
+    @brief Stack layout at the end of assembly stubs for interrupt handling.
+
+    The stack layout right before control is passed to the C interrupt handler by the assembly stubs.
+    It includes all registers, and an error code and interrupt vector.
+*/
 struct interrupt_stack_frame
 {
     uint64_t r15;
@@ -323,6 +348,21 @@ struct interrupt_stack_frame
     uint64_t ss;
 } __attribute__((packed));
 
+/*!
+    @brief Handles CPU exceptions and interrupts.
+
+    This function is called by the assembly stubs for each interrupt vector.
+    - For exceptions without error codes (e.g. invalid opcode),
+      prints a predefined error message and halts the system.
+    - For exceptions with error codes (e.g. page fault),
+      prints the description and the error code and halts.
+    - For external interrupts 0 to 15 (from the PIC), prints the IRQs number
+      and sends an End-Of-Interrupt command.
+    - For unknown / unhandled interrupts, prints a generic message 
+      including the interrupt vector and error code, then halts.
+
+    @param stack Pointer to the interrupt stack frame pushed by the CPU.
+*/
 void interrupt_handler(struct interrupt_stack_frame *stack);
 
 #endif // INTERRUPT_HANDLER_H
