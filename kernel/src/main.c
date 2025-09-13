@@ -15,6 +15,7 @@
 #include "drivers/pit.h"
 #include "drivers/ps2.h"
 #include "drivers/serial.h"
+#include "memory/pmm.h"
 #include "terminal.h"
 
 // set limine base revision to 3
@@ -26,6 +27,10 @@ __attribute__((used, section(".limine_requests"))) static volatile struct limine
 
 __attribute__((used, section(".limine_requests"))) static volatile struct limine_memmap_request memmap_request = {
     .id = LIMINE_MEMMAP_REQUEST,
+    .revision = 0};
+
+__attribute__((used, section(".limine_requests"))) static volatile struct limine_hhdm_request hhdm_request = {
+    .id = LIMINE_HHDM_REQUEST,
     .revision = 0};
 
 __attribute__((used, section(".limine_requests_start"))) static volatile LIMINE_REQUESTS_START_MARKER;
@@ -80,12 +85,17 @@ void kmain(void)
 
     // Get the memory map and print its entries.
     struct limine_memmap_response *memmap = memmap_request.response;
-    uint64_t memmap_num_entries = memmap->entry_count;
-    printf("Memory Map:\nBase\tLength\tType\n");
-    for (size_t i = 0; i < memmap_num_entries; i++)
+    
+    // Ensure we got the hhdm offset.
+    if (hhdm_request.response == NULL)
     {
-        printf("%p\t%u\t%d\n", memmap->entries[i]->base, memmap->entries[i]->length, memmap->entries[i]->type);
+        printf("Could not get HHDM :(\n");
+        hcf();
     }
+    
+    struct limine_hhdm_response *hhdm_response = hhdm_request.response;
+    
+    pmm_init(memmap, hhdm_response->offset);
 
     hcf();
 
