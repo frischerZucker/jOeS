@@ -114,6 +114,7 @@ static void pmm_print_memmap(struct limine_memmap_response *memmap)
     Assumes the global variable pmm_regions exists and uses it to store the region arrays address.
 
     @todo Instead of marking pages as used, I could create a seperate region for PMM data.
+    @todo If there are multiple regions with a length thats not a multiple of the page size, the calculated number of required pages from pmm_get_num_required_pages() could be wrong.
 
     @param memmap Pointer to a Limine memory map.
     @param base Physical base address where the region array starts.
@@ -152,6 +153,7 @@ static pmm_error_codes_t pmm_init_region_structs(struct limine_memmap_response *
         }
         
         // Mark the regions first pages as used.
+        /// @todo If there are multiple regions with a length thats not a multiple of the page size, the calculated number of required pages from pmm_get_num_required_pages() could be wrong.
         for (size_t page = 0; page < required_pages; page++)
         {
             // Calculate the pages physical address.
@@ -172,7 +174,100 @@ static pmm_error_codes_t pmm_init_region_structs(struct limine_memmap_response *
 }
 
 /*!
-    @brief Initializes the PMM.
+    @brief Allocates a single free physical memory page.
+
+    Searches through all memory regions managed by the PMM to find a free page.
+    The search is optimized by using static caches (region_cache, bitmap_cache)
+    to reduce iteration overhead by starting from the last successful allocated page.
+
+    The function scans each regions bitmap for a free bit (representing a free page),
+    marks the page as used, and returns its physical address.
+    If no free page is found across all regions, NULL is returned.
+
+    @returns Pointer to the allocated physical page, or NULL if no free page was found.
+*/
+void * pmm_alloc()
+{
+    static size_t region_cache = 0;
+    static size_t bitmap_cache = 0;
+
+    // Search a region that has free pages left.
+    for (size_t i = 0; i < pmm_num_regions; i++)
+    {
+        /*
+            Start at the last region where a free page was found in hope that there are more free pages.
+            This could avoid some iterations and therefore speed up the search a little.
+            The modulo operation is there so that the search will wrap around if the end of the array is reached without a hit.
+            This ensures everything, not just everything behind our cached region, is searched.
+        */
+        size_t region_index = (i + region_cache) % pmm_num_regions;
+
+        // Skip the current region if it has no free pages.
+        if (pmm_regions[region_index].free_pages == 0)
+        {
+            continue;
+        }
+        
+        // A region with free pages was found, so the regions index is saved as a starting point for the next allocation.
+        region_cache = region_index;
+        
+        // Search a byte with free pages in the regions bitmap.
+        for (size_t j = 0; j < pmm_regions[region_index].bitmap_size; i++)
+        {
+            /*
+                Start at the last byte where a free page was found in hope that there are more free pages.
+                This could avoid some iterations and therefore speed up the search a little.
+                The modulo operation is also there to make it wrap around at the end of the bitmap.
+            */
+            size_t bitmap_index =(j + bitmap_cache) % pmm_regions[region_index].bitmap_size;
+
+            // Skip bytes with no free pages.
+            if (pmm_regions[region_index].bitmap[bitmap_index] == UINT8_MAX)
+            {
+                continue;
+            }
+            
+            // A byte with free pages was found, so its index is saved as a starting point for the next allocation.
+            bitmap_cache = bitmap_index;
+
+            // Search through the bytes bits for a free page.
+            for (size_t k = 0; k < 8; k++)
+            {
+                if ((pmm_regions[region_index].bitmap[bitmap_index] & (1 << k)) == PMM_REGION_BITMAP_FREE)
+                {
+                    // Calculate the pages index in the region.
+                    size_t page = (bitmap_index * 8) + k;
+
+                    // Make ptr point to the pages physical address by adding the pages offset (page size * page index) to the regions base address.
+                    void * ptr = (void *)(pmm_regions[region_index].base + page * PAGE_SIZE_BYTE);
+                    // Mark the page as used.
+                    pmm_region_mark_page_used(&pmm_regions[region_index], (uintptr_t)ptr);                    
+                    
+                    // A page was found, so all these loops can be left and the address of the page returned.
+                    return ptr;
+                }
+            }
+        }
+    }
+    
+    // Returns NULL if no free page was found, and its address if one was found.
+    return NULL;
+}
+
+/*!
+    @brief Initializes the physical memory manager (PMM).
+
+    Sets up the PMM by parsing Limines memory map, detecting usable memory regions. 
+    Calculates how many pages are required to store PMM metadata (region structs, bitmaps) 
+    and searches for a suitable memory region to store this data.
+    Once found, initializes all region structs and marks memory used by the PMM as used to prevent reuse.
+
+    Aksi sets the HHDM (higher half direct map) offset for physical-to-virtual address translation.
+    Prints diagnostic information during setup for debugging purposes.
+
+    @param memmap Pointer to Limines memory map.
+    @param hhdm_offset Offset to convert physical to virtual addresses provided by Limine.
+    @returns PMM_OK on success, PMM_INIT_FAILED if setup fails.
 */
 pmm_error_codes_t pmm_init(struct limine_memmap_response *memmap, uint64_t hhdm_offset)
 {
@@ -214,9 +309,9 @@ pmm_error_codes_t pmm_init(struct limine_memmap_response *memmap, uint64_t hhdm_
     if (pmm_init_region_structs(memmap, pmm_base, phys_to_virt_offset, required_pages) != PMM_OK)
     {
         return PMM_INIT_FAILED;
-    }    
+    }        
 
-    printf("PMM: PMM initialized.\n");
+    printf("PMM: PMM initialized.\n");    
 
     return PMM_OK;
 }

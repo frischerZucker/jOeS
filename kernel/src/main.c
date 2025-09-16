@@ -100,6 +100,16 @@ void kmain(void)
         hcf();
     }
 
+    for (size_t i = 0; i < 10; i++)
+    {
+        int *a = NULL;
+        a = pmm_alloc();
+        if (a != NULL)
+        {
+            printf("allocated physical address: %p\n", a);
+        }
+    }
+
     hcf();
 
     // Initialize the PIC and enable interrupts.
