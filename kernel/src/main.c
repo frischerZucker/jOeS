@@ -95,7 +95,10 @@ void kmain(void)
     
     struct limine_hhdm_response *hhdm_response = hhdm_request.response;
     
-    pmm_init(memmap, hhdm_response->offset);
+    if (pmm_init(memmap, hhdm_response->offset) != PMM_OK)
+    {
+        hcf();
+    }
 
     hcf();
 

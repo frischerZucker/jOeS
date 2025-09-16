@@ -3,84 +3,76 @@
 #include "stdio.h"
 #include "string.h"
 
+#include "cpu/hcf.h"
+#include "drivers/serial.h"
+#include "memory/pmm_region.h"
+
 #define PAGE_SIZE_BYTE 4096
 
+static size_t pmm_memory_size_pages = 0;
+static size_t pmm_num_regions = 0;
+
+static ptrdiff_t phys_to_virt_offset = 0;
+
+static struct pmm_region_t *pmm_regions;
+
 /*!
-    @brief Available types of memory
+    @brief Convert physical to virtual addresses by adding the offset.
+
+    @param phys Physical address.
+    @param offset Offset used by the higher halt direct map.
+    @returns Virtual address.
 */
-typedef enum {
-    MEMMAP_TYPE_USABLE = 0,
-    MEMMAP_TYPE_RESERVED,
-    MEMMAP_TYPE_ACPI_RECLAIMABLE,
-    MEMMAP_TYPE_ACPI_NON_VOLATILE,
-    MEMMAP_TYPE_BAD_MEMORY,
-    MEMMAP_TYPE_BOOTLOADER_RECLAIMABLE,
-    MEMMAP_TYPE_KERNEL_AND_MODULES,
-    MEMMAP_TYPE_FRAMEBUFFER
-} pmm_memory_type_t;
-
-enum {
-    PMM_BITMAP_FREE = 0,
-    PMM_BITMAP_USED,
-    PMM_BITMAP_RESERVED
-} pmm_bitmap_entry_t;
-
-struct pmm_region_t {
-    uint8_t *bitmap;
-    uint64_t bitmap_size;
-
-    uint64_t base;
-    uint64_t length;
-
-    uint64_t free_pages;
-
-    pmm_memory_type_t type;
-};
-
-static uint64_t pmm_memory_size_pages = 0;
-static uint64_t pmm_num_regions = 0;
-
-static struct pmm_region_t *pmm_regions = {0};
+static inline uintptr_t phys_to_virt(uintptr_t phys, ptrdiff_t offset)
+{
+    return phys + offset;
+}
 
 /*!
     @brief Gets info about available memory and memory regions from the memory map.
 
-    Iterates over the memory map, calculates how many pages there are.
+    Iterates over the memory map and calculates how many pages there are.
     Saves the result to pmm_memory_size_pages and the number of memory regions to pmm_num_regions.
 
     @param memmap Pointer to Limines memory map.
+    @param num_regions Pointer to the variable where the number of regions should be stored.
+    @param num_pages Pointer to the variable where the number of pages should be stored.
 */
-static void pmm_detect_memory(struct limine_memmap_response *memmap)
+static void pmm_detect_memory(struct limine_memmap_response *memmap, size_t *num_regions, size_t *num_pages)
 {
-    uint64_t memory_size_byte = 0;
+    size_t memory_size_byte = 0;
 
     // Sum up the length of all entries of the memory map.
-    size_t pmm_num_regions = memmap->entry_count;
-    for (size_t i = 0; i < pmm_num_regions; i++)
+    *num_regions = memmap->entry_count;
+    for (size_t i = 0; i < *num_regions; i++)
     {
         memory_size_byte = memory_size_byte + memmap->entries[i]->length;
     }
 
-    pmm_memory_size_pages = memory_size_byte / PAGE_SIZE_BYTE;
+    *num_pages = memory_size_byte / PAGE_SIZE_BYTE;
 
-    printf("PMM: Detected %u kiB ^= %u pages memory.\n", memory_size_byte / 1024, pmm_memory_size_pages);
+    printf("PMM: Detected %u kiB ^= %u pages memory.\n", memory_size_byte / 1024, *num_pages);
 }
 
 /*!
-    @brief Calculates how much memory is needed for the PMMs data.
+    @brief Calculates how many pages are required to store the PMMs data.
 
+    @param regions How many memory regions exist.
+    @param pages How many pages exist.
     @returns Number of pages required to store the PMMs data.
 */
-static size_t pmm_calc_required_space()
+static size_t pmm_get_num_required_pages(size_t regions, size_t pages)
 {
     size_t required_pages = 0;
 
     // Space required for the pmm_region_t structs.
-    size_t required_bytes = pmm_num_regions * sizeof(struct pmm_region_t);
+    size_t required_bytes = regions * sizeof(struct pmm_region_t);
     // Space required for the bitmaps.
-    required_bytes = required_bytes + ((pmm_memory_size_pages + 7) / 8);
+    required_bytes = required_bytes + ((pages + 7) / 8);
 
     required_pages = (required_bytes + PAGE_SIZE_BYTE - 1) / PAGE_SIZE_BYTE;
+
+    printf("PMM: %u B / %u pages are required for the PMMs data.\n", required_bytes, required_pages);
 
     return required_pages;
 }
@@ -109,83 +101,122 @@ static void pmm_print_memmap(struct limine_memmap_response *memmap)
     }
 }
 
-void pmm_init(struct limine_memmap_response *memmap, uint64_t hhdm_offset)
+/*!
+    @brief Initializes region structs for the physical memory manager (PMM).
+
+    Converts the physical base address to a virtual address and sets up an array of pmm_region_t structs,
+    each representing a memory region from Limines memory map.
+    For each region, a bitmap is initialized to track page usage.
+
+    Assumes that the PMM metadata (region structs and bitmaps) is stored in usable memory.
+    Pages used by the PMM are marked as used, to protect them of accidental overwriting.
+
+    Assumes the global variable pmm_regions exists and uses it to store the region arrays address.
+
+    @todo Instead of marking pages as used, I could create a seperate region for PMM data.
+
+    @param memmap Pointer to a Limine memory map.
+    @param base Physical base address where the region array starts.
+    @param offset Offset used for physical-to-virtual address translation.
+    @param required_pages Number of pages used by the PMM that must be marked as used.
+    @returns PMM_OK on success, PMM_INIT_FAILED if marking PMM pages as used fails.
+*/
+static pmm_error_codes_t pmm_init_region_structs(struct limine_memmap_response *memmap, uintptr_t base, ptrdiff_t offset, size_t required_pages)
 {
-    printf("HHDM: %p\n", hhdm_offset);
+    // Set the base address for the region array.
+    pmm_regions = (struct pmm_region_t *) phys_to_virt(base, offset);
+
+    // Increment base to point to the first byte behind the region array.
+    // We will use this for the first regions bitmap.
+    uintptr_t bitmap_base = base + pmm_num_regions * sizeof(struct pmm_region_t);
+
+    // Initialize structs for all regions.
+    for (size_t i = 0; i < pmm_num_regions; i++)
+    {
+        pmm_region_init(&pmm_regions[i], (uint8_t *)phys_to_virt(bitmap_base, offset), memmap->entries[i]->base, memmap->entries[i]->length, memmap->entries[i]->type);
+
+        // Increment base to point to the first byte after the current regions bitmap.
+        // We will use this for the next bitmap.
+        bitmap_base = bitmap_base + pmm_regions[i].bitmap_size;
+    }
+
+    /// @todo: Instead of marking the pages as used, I could split the region in two, so that the pages used by the PMM get their own region.
+    
+    // Mark memory used for storing these structs as used.
+    for (size_t i = 0; i < pmm_num_regions; i++)
+    {
+        // Skip the region if its not the region where the PMMs data is stored.
+        if (pmm_regions[i].base != base)
+        {
+            continue;
+        }
+        
+        // Mark the regions first pages as used.
+        for (size_t page = 0; page < required_pages; page++)
+        {
+            // Calculate the pages physical address.
+            // regions needs to be casted to an uintptr_t, so that the addition does not increment by regions size, but uses bytes instead.
+            uintptr_t page_address = ((uintptr_t)pmm_regions - offset + page * PAGE_SIZE_BYTE);
+            
+            if (pmm_region_mark_page_used(&pmm_regions[i], page_address) != PMM_REGION_OK)
+            {
+                printf("PMM: ERROR: Could not mark page used by PMM as used!\n");
+                return PMM_INIT_FAILED;
+            }
+        }        
+
+        break;
+    }
+    
+    return PMM_OK;
+}
+
+/*!
+    @brief Initializes the PMM.
+*/
+pmm_error_codes_t pmm_init(struct limine_memmap_response *memmap, uint64_t hhdm_offset)
+{
+    printf("PMM: HHDM=%p\n", hhdm_offset);
+    phys_to_virt_offset = hhdm_offset;
+
     pmm_print_memmap(memmap);
  
-    // Detects how many pages are mapped. I don't really use this, so maybe I can remove it??
-    pmm_detect_memory(memmap);
+    pmm_detect_memory(memmap, &pmm_num_regions, &pmm_memory_size_pages);
 
-    size_t required_pages =  pmm_calc_required_space();
-    printf("Pages required for PMMs data: %u\n", required_pages);
+    // Calculate how many pages are required to store the PMMs data.
+    size_t required_pages =  pmm_get_num_required_pages(pmm_num_regions, pmm_memory_size_pages);
 
-    // Contains bitmaps for all usable memory regions.
-    // As of now it only lives in this functions stack.
-    /// @todo This needs to find a place in memory where it can live forever.
-    // struct pmm_bitmap_t *usable_regions_temp[pmm_num_regions];
-
-    // // Create a bitmap for all usable memory regions.
-    // size_t j = 0;
-    // size_t memmap_num_entries = memmap->entry_count;
-    // for (size_t i = 0; i < memmap_num_entries; i++)
-    // {
-    //     // Skip unsusual memory. It cannot be used, so it does not matter.
-    //     if (memmap->entries[i]->type != MEMMAP_TYPE_USABLE)
-    //     {
-    //         continue;
-    //     }
+    // Search for a place where the PMMs data can be stored.
+    uintptr_t pmm_base = (uintptr_t)NULL;
+    for (size_t i = 0; i < pmm_num_regions; i++)
+    {
+        if (memmap->entries[i]->type != MEMMAP_TYPE_USABLE)
+        {
+            continue;
+        }
         
-    //     printf("Usable Region @%p ^= page %u\n", memmap->entries[i]->base, memmap->entries[i]->base / PAGE_SIZE_BYTE);
+        if (memmap->entries[i]->length >= required_pages * PAGE_SIZE_BYTE)
+        {
+            pmm_base = memmap->entries[i]->base;
+            break;
+        }
+    }
+    if (pmm_base != (uintptr_t)NULL)
+    {
+        printf("PMM: Found space to store data at %p.\n", pmm_base);
+    }
+    else
+    {
+        printf("PMM: ERROR: Could not find space to store data!\n");
+        return PMM_INIT_FAILED;
+    }
 
-    //     // Used to count how many bytes are used by the regions bitmap, so occupied pages can later be marked as USED.
-    //     uint64_t bytes_used = 0;
+    if (pmm_init_region_structs(memmap, pmm_base, phys_to_virt_offset, required_pages) != PMM_OK)
+    {
+        return PMM_INIT_FAILED;
+    }    
 
-    //     // Store the regions bitmap at its first address.
-    //     usable_regions_temp[j] = memmap->entries[i]->base + hhdm_offset;
+    printf("PMM: PMM initialized.\n");
 
-    //     bytes_used = bytes_used + sizeof(struct pmm_bitmap_t);
-
-    //     // The regions base address.
-    //     usable_regions_temp[j]->base = memmap->entries[i]->base;
-    //     // The regions length in byte.
-    //     usable_regions_temp[j]->length = memmap->entries[i]->length;
-    //     // How many pages the region contains.
-    //     usable_regions_temp[j]->free_pages = memmap->entries[i]->length / PAGE_SIZE_BYTE;
-
-    //     // Store the bitmaps buffer right after the bitmaps struct.
-    //     usable_regions_temp[j]->buffer = usable_regions_temp[j]->base + hhdm_offset + bytes_used;
-    //     // How large the bitmap needs to be. Each bit contains information about one page, so (free_pages / 8) bytes are required.
-    //     // The result is rounded up by using (x + 7) / 8 to ensure its large enough.
-    //     usable_regions_temp[j]->bitmap_size = (usable_regions_temp[j]->free_pages + 7) / 8;
-    //     bytes_used = bytes_used + usable_regions_temp[j]->bitmap_size;
-
-    //     // Mark all pages as FREE.
-    //     memset(usable_regions_temp[j]->buffer, PMM_BITMAP_FREE, usable_regions_temp[j]->bitmap_size);
-
-    //     // How large the regions bitmap is in pages. 
-    //     uint64_t pages_used = (bytes_used + PAGE_SIZE_BYTE - 1) / PAGE_SIZE_BYTE;
-    //     // Mark the pages used by the regions bitmap as USED.
-    //     int a = 0, b = 0;
-    //     while (pages_used > 0)
-    //     {
-    //         usable_regions_temp[j]->buffer[a] = (PMM_BITMAP_USED << b);
-    //         pages_used = pages_used - 1;
-
-    //         b = b + 1;
-    //         if (b >= 8)
-    //         {
-    //             a = a + 1;
-    //             b = 0;
-    //         }
-    //     }
-
-    //     j = j + 1;
-    // }
-
-    // for (size_t i = 0; i < usable_regions_temp[0]->bitmap_size; i++)
-    // {
-    //     printf("%d ", usable_regions_temp[0]->buffer[i]);
-    // }
-    
+    return PMM_OK;
 }
