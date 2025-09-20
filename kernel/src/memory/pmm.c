@@ -174,19 +174,18 @@ static pmm_error_codes_t pmm_init_region_structs(struct limine_memmap_response *
 }
 
 /*!
-    @brief Checks if a page is currently free or in use.
+    @brief Searches a region containing a page.
 
-    Searches through all regions to find the region that includes the addresses page.
-    If it is found, calculates the page number corresponding page.
-    Checks its status in the bitmap and returns it.
-    If no matching region is found, a special page status is returned.
+    Uses binary search to find the region containing the pages address.
+    If it is found, its index in the region array is written into the value pointed to by region_index.
+    Returns an error code if no region containing the pages address was found.
 
-    @param ptr Pointer (physical address) to the page to check.
-    @returns PMM_PAGE_FREE if the page is free, PMM_PAGE_USED if it is used and PMM_PAGE_NOT_FOUND if no region matching the address is found.
+    @param region_index Pointer to the variable where the regions index should be stored.
+    @param ptr Pointer (physical address) off the page.
+    @returns PMM_OK if a matching region was found, PMM_ERROR_ADDRESS_NOT_FOUND if not.
 */
-pmm_page_status_t pmm_check_page(void *ptr)
+static pmm_error_codes_t get_region_containing_page(size_t *region_index, void *ptr)
 {
-    size_t region_index;
     size_t lower_bound = 0;
     size_t upper_bound = pmm_num_regions - 1;
 
@@ -199,33 +198,58 @@ pmm_page_status_t pmm_check_page(void *ptr)
     for (size_t i = 0; i < pmm_num_regions; i++)
     {
         // Calculate the next index to look at in the middle of the searched range.
-        region_index = lower_bound + ((upper_bound - lower_bound) / 2);
+        *region_index = lower_bound + ((upper_bound - lower_bound) / 2);
 
         // The address is smaller then the regions max. address.
         // The search windows upper bound is moved to the current index because the region can only be below there.
-        if (pmm_regions[region_index].base > (uintptr_t)ptr)
+        if (pmm_regions[*region_index].base > (uintptr_t)ptr)
         {
-            upper_bound = region_index - 1;
+            upper_bound = *region_index - 1;
             continue;
         }
         // The address is bigger then the regions max address.
         // The search windows lower bound is moved to the current index because the region can only be above there.
-        else if ((uintptr_t)ptr > pmm_regions[region_index].base + pmm_regions[region_index].length - 1)
+        else if ((uintptr_t)ptr > pmm_regions[*region_index].base + pmm_regions[*region_index].length - 1)
         {
-            lower_bound = region_index + 1;
+            lower_bound = *region_index + 1;
             continue;
         }
         else
         {
-            // Convert the physical address to the pages index in the region.
-            size_t page_index = ((uintptr_t)ptr - pmm_regions[region_index].base) / PAGE_SIZE_BYTE;
-    
-            return pmm_regions[region_index].bitmap[(uintptr_t)page_index / 8] & (1 << ((uintptr_t)page_index % 8));
+            // The current region includes the address, so we can return from the function.
+            // The value pointed to by region_index does now include the correct index.
+            return PMM_OK;
         }        
     }
     
     // No region including the physical address pointed to by ptr was found.
-    return PMM_PAGE_NOT_FOUND;
+    return PMM_ERROR_ADDRESS_NOT_FOUND;
+}
+
+/*!
+    @brief Checks if a page is currently free or in use.
+
+    Searches through all regions to find the region that includes the addresses page.
+    If it is found, calculates the page number corresponding page.
+    Checks its status in the bitmap and returns it.
+    If no matching region is found, a special page status is returned.
+
+    @param ptr Pointer (physical address) off the page to check.
+    @returns PMM_PAGE_FREE if the page is free, PMM_PAGE_USED if it is used and PMM_PAGE_NOT_FOUND if no region matching the address is found.
+*/
+pmm_page_status_t pmm_check_page(void *ptr)
+{
+    size_t region_index;
+    
+    if (get_region_containing_page(&region_index, ptr) != PMM_OK)
+    {
+        // No region including the physical address pointed to by ptr was found.
+        return PMM_PAGE_NOT_FOUND;
+    }
+    
+    size_t page_index = ((uintptr_t)ptr - pmm_regions[region_index].base) / PAGE_SIZE_BYTE;
+    
+    return pmm_regions[region_index].bitmap[(uintptr_t)page_index / 8] & (1 << ((uintptr_t)page_index % 8));    
 }
 
 /*!
@@ -312,7 +336,7 @@ void * pmm_alloc()
 /*!
     @brief Frees a single physical memory page.
 
-    Uses binary search to find the region that includes the page.
+    Uses get_region_containing_page() to find the region that includes the page.
     If it is found, the page is marked as free.
     If none is found, an error is returned.
 
@@ -322,44 +346,16 @@ void * pmm_alloc()
 pmm_error_codes_t pmm_free(void *ptr)
 {
     size_t region_index;
-    size_t lower_bound = 0;
-    size_t upper_bound = pmm_num_regions - 1;
-
-    /*
-        Search for up to pmm_num_regions tries. 
-        If all tries failed we can be sure that no region containing 
-        the address exists and the search got stuck in an endless loop,
-        as binary searchs worst case is log_2(pmm_num_regions).
-    */
-    for (size_t i = 0; i < pmm_num_regions; i++)
+    
+    if (get_region_containing_page(&region_index, ptr) != PMM_OK)
     {
-        // Calculate the next index to look at in the middle of the searched range.
-        region_index = lower_bound + ((upper_bound - lower_bound) / 2);
-
-        // The address is smaller then the regions max. address.
-        // The search windows upper bound is moved to the current index because the region can only be below there.
-        if (pmm_regions[region_index].base > (uintptr_t)ptr)
-        {
-            upper_bound = region_index - 1;
-            continue;
-        }
-        // The address is bigger then the regions max address.
-        // The search windows lower bound is moved to the current index because the region can only be above there.
-        else if ((uintptr_t)ptr > pmm_regions[region_index].base + pmm_regions[region_index].length - 1)
-        {
-            lower_bound = region_index + 1;
-            continue;
-        }
-        else
-        {
-            // A region including ptr was found. Mark the page corresponding to the address as free.
-            pmm_region_mark_page_free(&pmm_regions[region_index], (uintptr_t)ptr);
-            return PMM_OK;
-        }        
+        // No region including the physical address pointed to by ptr was found, so an error is returned. 
+        return PMM_ERROR_ADDRESS_NOT_FOUND;
     }
     
-    // No region including the physical address pointed to by ptr was found, so an error is returned. 
-    return PMM_ERROR_ADDRESS_NOT_FOUND;
+    // A region including ptr was found. Mark the page corresponding to the address as free.
+    pmm_region_mark_page_free(&pmm_regions[region_index], (uintptr_t)ptr);
+    return PMM_OK;
 }
 
 /*!
