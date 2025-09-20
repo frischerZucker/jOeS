@@ -33,7 +33,8 @@ typedef enum{
 */
 typedef enum{
     PMM_OK = 0,
-    PMM_INIT_FAILED
+    PMM_ERROR_INIT_FAILED,
+    PMM_ERROR_ADDRESS_NOT_FOUND
 } pmm_error_codes_t;
 
 /*!
@@ -68,6 +69,16 @@ pmm_error_codes_t pmm_init(struct limine_memmap_response *memmap, uint64_t hhdm_
 */
 void * pmm_alloc();
 
+/*!
+    @brief Frees a single physical memory page.
+
+    Uses binary search to find the region that includes the page.
+    If it is found, the page is marked as free.
+    If none is found, an error is returned.
+
+    @param ptr Pointer (physical address) to the page to free.
+    @returns PMM_OK on success, PMM_ERROR_ADDRESS_NOT_FOUND if no region that contains the pages address was found.
+*/
 pmm_error_codes_t pmm_free(void *ptr);
 
 #endif // PMM_H

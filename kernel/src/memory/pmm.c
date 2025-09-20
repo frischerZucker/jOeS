@@ -163,7 +163,7 @@ static pmm_error_codes_t pmm_init_region_structs(struct limine_memmap_response *
             if (pmm_region_mark_page_used(&pmm_regions[i], page_address) != PMM_REGION_OK)
             {
                 printf("PMM: ERROR: Could not mark page used by PMM as used!\n");
-                return PMM_INIT_FAILED;
+                return PMM_ERROR_INIT_FAILED;
             }
         }        
 
@@ -255,6 +255,59 @@ void * pmm_alloc()
 }
 
 /*!
+    @brief Frees a single physical memory page.
+
+    Uses binary search to find the region that includes the page.
+    If it is found, the page is marked as free.
+    If none is found, an error is returned.
+
+    @param ptr Pointer (physical address) to the page to free.
+    @returns PMM_OK on success, PMM_ERROR_ADDRESS_NOT_FOUND if no region that contains the pages address was found.
+*/
+pmm_error_codes_t pmm_free(void *ptr)
+{
+    size_t region_index;
+    size_t lower_bound = 0;
+    size_t upper_bound = pmm_num_regions - 1;
+
+    /*
+        Search for up to pmm_num_regions tries. 
+        If all tries failed we can be sure that no region containing 
+        the address exists and the search got stuck in an endless loop,
+        as binary searchs worst case is log_2(pmm_num_regions).
+    */
+    for (size_t i = 0; i < pmm_num_regions; i++)
+    {
+        // Calculate the next index to look at in the middle of the searched range.
+        region_index = lower_bound + ((upper_bound - lower_bound) / 2);
+
+        // The address is smaller then the regions max. address.
+        // The search windows upper bound is moved to the current index because the region can only be below there.
+        if (pmm_regions[region_index].base > (uintptr_t)ptr)
+        {
+            upper_bound = region_index - 1;
+            continue;
+        }
+        // The address is bigger then the regions max address.
+        // The search windows lower bound is moved to the current index because the region can only be above there.
+        else if ((uintptr_t)ptr > pmm_regions[region_index].base + pmm_regions[region_index].length - 1)
+        {
+            lower_bound = region_index + 1;
+            continue;
+        }
+        else
+        {
+            // A region including ptr was found. Mark the page corresponding to the address as free.
+            pmm_region_mark_page_free(&pmm_regions[region_index], (uintptr_t)ptr);
+            return PMM_OK;
+        }        
+    }
+    
+    // No region including the physical address pointed to by ptr was found, so an error is returned. 
+    return PMM_ERROR_ADDRESS_NOT_FOUND;
+}
+
+/*!
     @brief Initializes the physical memory manager (PMM).
 
     Sets up the PMM by parsing Limines memory map, detecting usable memory regions. 
@@ -303,12 +356,12 @@ pmm_error_codes_t pmm_init(struct limine_memmap_response *memmap, uint64_t hhdm_
     else
     {
         printf("PMM: ERROR: Could not find space to store data!\n");
-        return PMM_INIT_FAILED;
+        return PMM_ERROR_INIT_FAILED;
     }
 
     if (pmm_init_region_structs(memmap, pmm_base, phys_to_virt_offset, required_pages) != PMM_OK)
     {
-        return PMM_INIT_FAILED;
+        return PMM_ERROR_INIT_FAILED;
     }        
 
     printf("PMM: PMM initialized.\n");    

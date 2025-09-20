@@ -100,7 +100,13 @@ void kmain(void)
         hcf();
     }
 
-    for (size_t i = 0; i < 10; i++)
+    int *b = NULL;
+    b = pmm_alloc();
+    if (b != NULL)
+    {
+        printf("allocated physical address: %p\n", b);
+    }
+    for (size_t i = 0; i < 5; i++)
     {
         int *a = NULL;
         a = pmm_alloc();
@@ -108,6 +114,16 @@ void kmain(void)
         {
             printf("allocated physical address: %p\n", a);
         }
+
+        pmm_free(a);
+    }    
+
+    pmm_free(b);
+
+    b = pmm_alloc();
+    if (b != NULL)
+    {
+        printf("allocated physical address: %p\n", b);
     }
 
     hcf();
