@@ -106,6 +106,9 @@ void kmain(void)
     {
         printf("allocated physical address: %p\n", b);
     }
+
+    printf("%d\n", pmm_check_page(b));
+
     for (size_t i = 0; i < 5; i++)
     {
         int *a = NULL;
@@ -119,6 +122,7 @@ void kmain(void)
     }    
 
     pmm_free(b);
+    printf("%d\n", pmm_check_page(b));
 
     b = pmm_alloc();
     if (b != NULL)

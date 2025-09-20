@@ -37,6 +37,12 @@ typedef enum{
     PMM_ERROR_ADDRESS_NOT_FOUND
 } pmm_error_codes_t;
 
+typedef enum {
+    PMM_PAGE_FREE = 0,
+    PMM_PAGE_USED = 1,
+    PMM_PAGE_NOT_FOUND
+} pmm_page_status_t;
+
 /*!
     @brief Initializes the physical memory manager (PMM).
 
@@ -53,6 +59,19 @@ typedef enum{
     @returns PMM_OK on success, PMM_INIT_FAILED if setup fails.
 */
 pmm_error_codes_t pmm_init(struct limine_memmap_response *memmap, uint64_t hhdm_offset);
+
+/*!
+    @brief Checks if a page is currently free or in use.
+
+    Searches through all regions to find the region that includes the addresses page.
+    If it is found, calculates the page number corresponding page.
+    Checks its status in the bitmap and returns it.
+    If no matching region is found, a special page status is returned.
+
+    @param ptr Pointer (physical address) to the page to check.
+    @returns PMM_PAGE_FREE if the page is free, PMM_PAGE_USED if it is used and PMM_PAGE_NOT_FOUND if no region matching the address is found.
+*/
+pmm_page_status_t pmm_check_page(void *ptr);
 
 /*!
     @brief Allocates a single free physical memory page.
