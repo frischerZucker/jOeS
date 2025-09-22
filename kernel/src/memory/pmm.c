@@ -111,21 +111,23 @@ static void pmm_print_memmap(struct limine_memmap_response *memmap)
     Assumes that the PMM metadata (region structs and bitmaps) is stored in usable memory.
     Pages used by the PMM are marked as used, to protect them of accidental overwriting.
 
-    Assumes the global variable pmm_regions exists and uses it to store the region arrays address.
+    PMM metadata is stored in an array of pmm_region_t structs at the physical address stored in base. 
+    It gets converted to a virtual address and is stored in the pointer pointed to by region_array_pointer.
 
     @todo Instead of marking pages as used, I could create a seperate region for PMM data.
     @todo If there are multiple regions with a length thats not a multiple of the page size, the calculated number of required pages from pmm_get_num_required_pages() could be wrong.
 
     @param memmap Pointer to a Limine memory map.
+    @param region_array_ptr Pointer to a pointer to memory region structs (pmm_region_t).
     @param base Physical base address where the region array starts.
     @param offset Offset used for physical-to-virtual address translation.
     @param required_pages Number of pages used by the PMM that must be marked as used.
     @returns PMM_OK on success, PMM_INIT_FAILED if marking PMM pages as used fails.
 */
-static pmm_error_codes_t pmm_init_region_structs(struct limine_memmap_response *memmap, uintptr_t base, ptrdiff_t offset, size_t required_pages)
+static pmm_error_codes_t pmm_init_region_structs(struct limine_memmap_response *memmap, struct pmm_region_t **region_array_ptr, uintptr_t base, ptrdiff_t offset, size_t required_pages)
 {
     // Set the base address for the region array.
-    pmm_regions = (struct pmm_region_t *) phys_to_virt(base, offset);
+    *region_array_ptr = (struct pmm_region_t *) phys_to_virt(base, offset);
 
     // Increment base to point to the first byte behind the region array.
     // We will use this for the first regions bitmap.
@@ -134,7 +136,7 @@ static pmm_error_codes_t pmm_init_region_structs(struct limine_memmap_response *
     // Initialize structs for all regions.
     for (size_t i = 0; i < pmm_num_regions; i++)
     {
-        pmm_region_init(&pmm_regions[i], (uint8_t *)phys_to_virt(bitmap_base, offset), memmap->entries[i]->base, memmap->entries[i]->length, memmap->entries[i]->type);
+        pmm_region_init(&((*region_array_ptr)[i]), (uint8_t *)phys_to_virt(bitmap_base, offset), memmap->entries[i]->base, memmap->entries[i]->length, memmap->entries[i]->type);
 
         // Increment base to point to the first byte after the current regions bitmap.
         // We will use this for the next bitmap.
@@ -147,7 +149,7 @@ static pmm_error_codes_t pmm_init_region_structs(struct limine_memmap_response *
     for (size_t i = 0; i < pmm_num_regions; i++)
     {
         // Skip the region if its not the region where the PMMs data is stored.
-        if (pmm_regions[i].base != base)
+        if ((*region_array_ptr)[i].base != base)
         {
             continue;
         }
@@ -158,9 +160,9 @@ static pmm_error_codes_t pmm_init_region_structs(struct limine_memmap_response *
         {
             // Calculate the pages physical address.
             // regions needs to be casted to an uintptr_t, so that the addition does not increment by regions size, but uses bytes instead.
-            uintptr_t page_address = ((uintptr_t)pmm_regions - offset + page * PAGE_SIZE_BYTE);
+            uintptr_t page_address = ((uintptr_t)(*region_array_ptr) - offset + page * PAGE_SIZE_BYTE);
             
-            if (pmm_region_mark_page_used(&pmm_regions[i], page_address) != PMM_REGION_OK)
+            if (pmm_region_mark_page_used(&((*region_array_ptr)[i]), page_address) != PMM_REGION_OK)
             {
                 printf("PMM: ERROR: Could not mark page used by PMM as used!\n");
                 return PMM_ERROR_INIT_FAILED;
@@ -410,7 +412,7 @@ pmm_error_codes_t pmm_init(struct limine_memmap_response *memmap, uint64_t hhdm_
         return PMM_ERROR_INIT_FAILED;
     }
 
-    if (pmm_init_region_structs(memmap, pmm_base, phys_to_virt_offset, required_pages) != PMM_OK)
+    if (pmm_init_region_structs(memmap, &pmm_regions, pmm_base, phys_to_virt_offset, required_pages) != PMM_OK)
     {
         return PMM_ERROR_INIT_FAILED;
     }        
