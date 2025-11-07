@@ -293,7 +293,7 @@ void * pmm_alloc()
         region_cache = region_index;
         
         // Search a byte with free pages in the regions bitmap.
-        for (size_t j = 0; j < pmm_regions[region_index].bitmap_size; i++)
+        for (size_t j = 0; j < pmm_regions[region_index].bitmap_size; j++)
         {
             /*
                 Start at the last byte where a free page was found in hope that there are more free pages.
