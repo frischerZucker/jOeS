@@ -18,8 +18,8 @@
 
 **jOeS** is a hobby project to create an operating system for `x86_64` using C and the [Limine Bootloader](https://github.com/limine-bootloader/limine).
 My long-term goal is to create an OS that is able to run simple programms, preferrably on real hardware.
-As of now, I managed to write a lil kernel that can handle interrupt, print to a framebuffer. 
-It also includes some drivers for some (partially outdated :|) devices:
+As of now, I managed to write a lil kernel that can handle interrupts and print to a framebuffer. 
+It also includes drivers for a small list of (partially outdated :|) devices:
 - 8259 PIC
 - 8254 PIT
 - I8042 PS/2 Controller
@@ -28,6 +28,11 @@ It also includes some drivers for some (partially outdated :|) devices:
 
 The next chapter on this journey will be memory management. I plan on implementing physical and virtual memory managers as my next step.
 Let's see how this will turn out and how long it takes! :D 
+
+**Update:** 
+I implemented the PMM. Yayy! :) 
+But for now I don't got the time and mental capacity to wrap my head around paging and implement a VMM.
+So I will work more irregulary on easier stuff instead until this changes.
 
 ## Project Structure
 ```
@@ -67,7 +72,7 @@ To build and run **jOeS** you need:
 - NASM
 - `qemu-system-x86_64`
 
-If you are using a Linux Distro that uses `apt` as package manager, you can run check for missing dependencies and install them by running:
+If you are using a Linux Distro that uses `apt` as package manager, you can check for missing dependencies and install them by running:
 ``` bash
 ./tools/check-dependencies.sh
 ```
