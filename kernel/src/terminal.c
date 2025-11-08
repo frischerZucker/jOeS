@@ -52,7 +52,7 @@ void terminal_set_color(uint32_t color)
     @param c ASCII character to draw.
     @returns TERMINAL_OK on success, TERMINAL_ERROR_UNHANDLED_CHARACTER if character is not handled by this function.
 */
-terminal_error_codes_t terminal_put_char(uint8_t c)
+void terminal_put_char(uint8_t c)
 {
     switch (c)
     {
@@ -76,7 +76,7 @@ terminal_error_codes_t terminal_put_char(uint8_t c)
         // c is not printable -> exit with error code
         if (c < 32 || c > 126)
         {
-            return TERMINAL_ERROR_UNHANDLED_CHARACTER;
+            return;
         }
 
         framebuffer_draw_char(terminal.framebuffer, c, terminal.cursor_x * terminal.char_w, terminal.cursor_y * terminal.char_h, terminal.fg_color);
@@ -98,8 +98,6 @@ terminal_error_codes_t terminal_put_char(uint8_t c)
         terminal.cursor_y = 0;
         framebuffer_clear(terminal.framebuffer, 0);
     }
-
-    return TERMINAL_OK;
 }
 
 /*!
@@ -117,3 +115,22 @@ void terminal_write_string(char *str, size_t len)
         terminal_put_char(str[i]);
     }
 }
+
+/*
+    Disable warnings for unused parameters.
+    context is not used, but needs to be there so that the function can be used for logging.
+*/
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+/*!
+    @brief Logging interface implementation for the terminal.
+
+    @param c Character to log.
+    @param context Additional parameters (not used for terminal).
+*/
+void terminal_log_write(uint8_t c, void *context)
+{
+    terminal_put_char(c);
+}
+// Enable "-Wunused-parameter" again.
+#pragma GCC diagnostic pop 

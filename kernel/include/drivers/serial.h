@@ -3,7 +3,7 @@
 
     @brief Serial port driver.
     
-    Provides functions initializing, testing, sending, and receiving data via serial ports.
+    Provides functions for initializing, testing, sending, and receiving data via serial ports.
     Supports configurable baud rate, parity, stop bits, and character length.
     Includes basic error handling and loopback testing for reliability.
 
@@ -118,5 +118,13 @@ void serial_print_line(uint16_t port, char *data);
     @param buffer_size Size of the buffer pointed to by dest.
 */
 void serial_read_line(uint16_t port, char *dest, size_t buffer_size);
+
+/*!
+    @brief Logging interface implementation for logging via serial.
+
+    @param c Character to log.
+    @param context Pointer to a variable that specifies the serial port to use.
+*/
+void serial_log_write(uint8_t c, void *context);
 
 #endif // SERIAL_H

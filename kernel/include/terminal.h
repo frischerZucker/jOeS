@@ -75,7 +75,7 @@ void terminal_set_color(uint32_t color);
     @param c ASCII character to draw.
     @returns TERMINAL_OK on success, TERMINAL_ERROR_UNHANDLED_CHARACTER if character is not handled by this function.
 */
-terminal_error_codes_t terminal_put_char(uint8_t c);
+void terminal_put_char(uint8_t c);
 
 /*!
     @brief Writes a string of characters to the terminal.
@@ -86,5 +86,13 @@ terminal_error_codes_t terminal_put_char(uint8_t c);
     @param len Length of the string in characters.
 */
 void terminal_write_string(char *str, size_t len);
+
+/*!
+    @brief Logging interface implementation for the terminal.
+
+    @param c Character to log.
+    @param context Additional parameters (not used for terminal).
+*/
+void terminal_log_write(uint8_t c, void *context);
 
 #endif // TERMINAL_H

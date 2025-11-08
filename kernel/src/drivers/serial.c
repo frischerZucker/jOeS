@@ -4,6 +4,7 @@
 #include "string.h"
 
 #include "cpu/port_io.h"
+#include "logging.h"
 
 // Register offsets.
 #define SERIAL_INT_ENABLE_REG(p) (p + 1)
@@ -124,10 +125,12 @@ void serial_read_line(uint16_t port, char *dest, size_t buffer_size)
 */
 serial_error_codes_t serial_init(uint16_t port, uint32_t baud_rate, uint8_t mode)
 {
+    LOG_INFO("Initializing serial driver...");
+
     // Check if the baud rate is ok, return if isn't..
     if (baud_rate > SERIAL_BAUD_RATE_MAX || baud_rate < 1)
     {
-        printf("Serial: Baud rate out of bounds! (br=%d)\n", baud_rate);
+        LOG_ERROR("Baud rate out of bounds! (br=%d)", baud_rate);
         return SERIAL_ERROR_BR_OUT_OF_BOUNDS;
     }
     
@@ -172,7 +175,7 @@ serial_error_codes_t serial_test(uint16_t port)
     // Read data and check if it is what we send earlier.
     if (port_read_byte(port) == SERIAL_TEST_BYTE)
     {
-        printf("Serial: Loopback ok.\n");
+        LOG_INFO("Loopback OK.");
 
         // Set serial port back to normal mode.
         port_write_byte(SERIAL_MODEM_CONTROL_REG(port), SERIAL_NORMAL_MODE);
@@ -181,11 +184,24 @@ serial_error_codes_t serial_test(uint16_t port)
     }
     else
     {
-        printf("Serial: Loopback failed!\n");
+        LOG_ERROR("Loopback failed!");
 
         // Set serial port back to normal mode.
         port_write_byte(SERIAL_MODEM_CONTROL_REG(port), SERIAL_NORMAL_MODE);
 
         return SERIAL_LOOPBACK_FAILED;
     }
+}
+
+/*!
+    @brief Logging interface implementation for logging via serial.
+
+    @param c Character to log.
+    @param context Pointer to a variable that specifies the serial port to use.
+*/
+void serial_log_write(uint8_t c, void *context)
+{
+    int port = *(int *)context;
+
+    serial_send_byte(port, c);
 }
