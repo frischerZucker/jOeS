@@ -3,6 +3,7 @@
 #include "stdio.h"
 
 #include "cpu/port_io.h"
+#include "logging.h"
 
 #define PIT_COMMAND 0x43
 
@@ -39,7 +40,7 @@ pit_error_codes pit_init_channel(uint8_t channel, uint64_t frequency, uint8_t mo
 
     if (frequency < PIT_MIN_FREQUENCY || frequency > PIT_MAX_FREQUENCY)
     {
-        printf("PIT: Frequency out of bounds! (f=%dHz)\n", frequency);
+        LOG_ERROR("Frequency out of bounds! (f=%dHz)", frequency);
         return PIT_ERROR_FREQUENCY_OUT_OF_BOUNDS;
     }
     

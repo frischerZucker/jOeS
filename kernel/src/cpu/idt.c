@@ -1,6 +1,7 @@
-#include "cpu/idt.h"
-
 #include "string.h"
+
+#include "cpu/idt.h"
+#include "logging.h"
 
 struct idt_gate_descriptor idt[IDT_ENTRIES];
 
@@ -321,4 +322,6 @@ void idt_install(struct idt_gate_descriptor *target)
         : "m"(idtr)
         : "memory");
     asm("cli");
+
+    LOG_INFO("IDT loaded successfully.");
 }

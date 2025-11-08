@@ -1,9 +1,11 @@
 #include "memory/pmm_region.h"
 
-#define PAGE_SIZE_BYTE 4096
-
 #include "stdio.h"
 #include "string.h"
+
+#include "logging.h"
+
+#define PAGE_SIZE_BYTE 4096
 
 /*!
     @brief Mark a page corresponding to a physical address as free.
@@ -18,7 +20,7 @@ pmm_region_error_codes_t pmm_region_mark_page_free(struct pmm_region_t *region, 
 {
     if (phys_address < region->base || phys_address > (region->base + region->length))
     {
-        printf("PMM REGION: ERROR: Address is not in region: phys address=%p, base=%p, len=%u.\n", phys_address, region->base, region->length);
+        LOG_ERROR("Address is not in region: phys address=%p, base=%p, len=%u!", phys_address, region->base, region->length);
         return PMM_REGION_ERROR;
     }   
 
@@ -43,7 +45,7 @@ pmm_region_error_codes_t pmm_region_mark_page_used(struct pmm_region_t *region, 
 {
     if (phys_address < region->base || phys_address > (region->base + region->length))
     {
-        printf("PMM REGION: ERROR: Address is not in region: phys address=%p, base=%p, len=%u.\n", phys_address, region->base, region->length);
+        LOG_ERROR("Address is not in region: phys address=%p, base=%p, len=%u!", phys_address, region->base, region->length);
         return PMM_REGION_ERROR;
     }   
 

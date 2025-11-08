@@ -3,6 +3,7 @@
 #include "stdio.h"
 
 #include "drivers/ps2.h"
+#include "logging.h"
 
 #define PS2_KBD_ENABLE_SCANNING 0xf4
 #define PS2_KBD_DISABLE_SCANNING 0xf5
@@ -208,7 +209,7 @@ static inline key_code_t ps2_kbd_scancode_to_keycode(uint8_t scancode, ps2_kbd_s
         break;
     
     default:
-        printf("PS/2 KBD: Can't convert scancode. Scancode set %d is not implemented.\n", scancode_set);
+        LOG_ERROR("Can't convert scancode. Scancode set %d is not implemented!", scancode_set);
         return KEY_UNKNOWN;
         break;
     }
@@ -383,7 +384,7 @@ static ps2_kbd_error_codes_t ps2_kbd_set_scancode_set(uint8_t port, ps2_kbd_scan
         return PS2_KBD_ERROR_TOO_MANY_RESENDS;
     }
 
-    printf("PS/2 KBD: Enabled scancode set %d.\n", scancode_set);
+    LOG_DEBUG("Enabled scancode set %d.", scancode_set);
 
     return PS2_KBD_OK;
 }
@@ -556,7 +557,7 @@ void ps2_kbd_irq_callback(void)
         break;
 
     default:
-        printf("PS/2 KBD: This state should not be reached.\n");
+        LOG_ERROR("This state should not be reached.");
         break;
     }
 
@@ -605,11 +606,11 @@ ps2_kbd_error_codes_t ps2_kbd_init(uint8_t port)
     // Abort if the driver is already initialized.
     if (ps2_kbd_state != PS2_KBD_STATE_UNINITIALIZED)
     {
-        printf("PS/2 KBD: Driver is already initialized at port %d!\n", port);
+        LOG_ERROR("Driver is already initialized at port %d!", port);
         return PS2_KBD_ERROR_ALREADY_INITIALIZED;
     }
 
-    printf("PS/2 KBD: Initializing keyboard driver for port %d.\n", port);
+    LOG_INFO("Initializing PS/2 keyboard driver for port %d.", port);
 
     // Disable scanning so that the keyboard cannot disturb the initialization.
     ps2_send_byte(ps2_kbd_port, PS2_KBD_DISABLE_SCANNING);
@@ -617,7 +618,7 @@ ps2_kbd_error_codes_t ps2_kbd_init(uint8_t port)
     // Enable scancode set 1.
     if (ps2_kbd_set_scancode_set(ps2_kbd_port, PS2_KBD_SCANCODE_SET_1) != PS2_KBD_OK)
     {
-        printf("PS/2 KBD: Couldn't set the scancode set!");
+        LOG_ERROR("Couldn't set the scancode set!");
         return PS2_KBD_ERROR_SET_SCANCODE_SET_FAILED;
     }
 
@@ -626,7 +627,7 @@ ps2_kbd_error_codes_t ps2_kbd_init(uint8_t port)
 
     ps2_kbd_state = PS2_KBD_STATE_NORMAL;
 
-    printf("PS/2 KBD: Keyboard initialized.\n");
+    LOG_INFO("Keyboard initialized.");
 
     return PS2_KBD_OK;
 }

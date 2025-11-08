@@ -6,6 +6,7 @@
 #include "drivers/keyboard.h"
 #include "drivers/pic.h"
 #include "drivers/ps2_keyboard.h"
+#include "logging.h"
 
 /*!
     @brief Handles CPU exceptions and interrupts.
@@ -51,7 +52,7 @@ void interrupt_handler(struct interrupt_stack_frame *stack)
     case INT_RESERVED8:
     case INT_RESERVED9:
     case INT_RESERVED10:
-        printf(interrupt_descriptions[stack->interrupt_vector]);
+        LOG_ERROR(interrupt_descriptions[stack->interrupt_vector]);
         hcf();
         break;
     // Exceptions that have an error code.
@@ -63,7 +64,7 @@ void interrupt_handler(struct interrupt_stack_frame *stack)
     case INT_PAGE_FAULT:
     case INT_ALIGNMENT_CHECK:
     case INT_CONTROL_PROTECTION_EXCEPTION:
-        printf(interrupt_descriptions[stack->interrupt_vector], stack->error_code);
+        LOG_ERROR(interrupt_descriptions[stack->interrupt_vector], stack->error_code);
         hcf();
         break;
     // IRQs from the PIC.
@@ -83,65 +84,65 @@ void interrupt_handler(struct interrupt_stack_frame *stack)
         pic_send_eoi(1);
         break;
     case INT_EXT_INT2:
-        printf("EXT2\n");
+        LOG_DEBUG("EXT2\n");
         pic_send_eoi(2);
         break;
     case INT_EXT_INT3:
-        printf("EXT3\n");
+        LOG_DEBUG("EXT3\n");
         pic_send_eoi(3);
         break;
     case INT_EXT_INT4:
-        printf("EXT4\n");
+        LOG_DEBUG("EXT4\n");
         pic_send_eoi(4);
         break;
     case INT_EXT_INT5:
-        printf("EXT5\n");
+        LOG_DEBUG("EXT5\n");
         pic_send_eoi(5);
         break;
     case INT_EXT_INT6:
-        printf("EXT6\n");
+        LOG_DEBUG("EXT6\n");
         pic_send_eoi(6);
         break;
     case INT_EXT_INT7:
-        printf("EXT7\n");
+        LOG_DEBUG("EXT7\n");
         pic_send_eoi(7);
         break;
     case INT_EXT_INT8:
-        printf("EXT8\n");
+        LOG_DEBUG("EXT8\n");
         pic_send_eoi(8);
         break;
     case INT_EXT_INT9:
-        printf("EXT9\n");
+        LOG_DEBUG("EXT9\n");
         pic_send_eoi(9);
         break;
     case INT_EXT_INT10:
-        printf("EXT10\n");
+        LOG_DEBUG("EXT10\n");
         pic_send_eoi(10);
         break;
     case INT_EXT_INT11:
-        printf("EXT11\n");
+        LOG_DEBUG("EXT11\n");
         pic_send_eoi(11);
         break;
     case INT_EXT_INT12:
-        printf("EXT12\n");
+        LOG_DEBUG("EXT12\n");
         pic_send_eoi(12);
         break;
     case INT_EXT_INT13:
-        printf("EXT13\n");
+        LOG_DEBUG("EXT13\n");
         pic_send_eoi(13);
         break;
     case INT_EXT_INT14:
-        printf("EXT14\n");
+        LOG_DEBUG("EXT14\n");
         pic_send_eoi(14);
         break;
     case INT_EXT_INT15:
-        printf("EXT15\n");
+        LOG_DEBUG("EXT15\n");
         pic_send_eoi(15);
         break;
 
     // Catches Exceptions / Interrupts that aren't handled.
     default:
-        printf(interrupt_descriptions[INT_DESCRIPTION_UNKNOWN_EXCEPTION], stack->interrupt_vector, stack->error_code);
+        LOG_ERROR(interrupt_descriptions[INT_DESCRIPTION_UNKNOWN_EXCEPTION], stack->interrupt_vector, stack->error_code);
         hcf();
         break;
     }

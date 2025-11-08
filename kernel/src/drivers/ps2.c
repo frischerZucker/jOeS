@@ -3,9 +3,10 @@
 #include <stdbool.h>
 #include "stdio.h"
 
-#include "drivers/pic.h"
 #include "cpu/port_io.h"
+#include "drivers/pic.h"
 #include "drivers/ps2_keyboard.h"
+#include "logging.h"
 
 // Adresses of the IO ports used by the PS/2 controller.
 #define PS2_DATA 0x60
@@ -351,7 +352,7 @@ ps2_error_codes_t ps2_reset_device(uint8_t port)
 
     if (ps2_receive_byte(&response) == PS2_ERROR_TIMEOUT)
     {
-        printf("PS/2: Timeout during device reset!");
+        LOG_ERROR("Timeout during device reset!");
         return PS2_ERROR_TIMEOUT;
     }
 
@@ -420,7 +421,7 @@ ps2_error_codes_t ps2_identify_device(uint8_t port, int32_t *device_type)
         }
     }
 
-    printf("PS/2: Device at port %d: %x (%s).\n", port, *device_type, (ps2_device_is_keyboard(*device_type) ? "kbd" : "mouse"));
+    LOG_INFO("PS/2 device at port %d: %x (%s).", port, *device_type, (ps2_device_is_keyboard(*device_type) ? "kbd" : "mouse"));
 
     // Restore the old config byte. Enables translation if it was turned off earlier.
     ps2_send_command(PS2_CMD_WRITE_CONFIG_BYTE);
@@ -447,6 +448,8 @@ ps2_error_codes_t ps2_init_controller(void)
 {
     uint8_t response = 0; // Used for receiving data via PS/2 when I don't really know where to put it.
 
+    LOG_INFO("Initializing PS/2 controller...");
+
     // Read data from the output buffer so that nothing unexpected (e.g. some key presses) are stuck in there.
     ps2_flush_output_buffer();
 
@@ -463,7 +466,7 @@ ps2_error_codes_t ps2_init_controller(void)
     // config_byte.byte = ps2_receive_byte();
     if (ps2_receive_byte(&config_byte.byte) == PS2_ERROR_TIMEOUT)
     {
-        printf("PS/2: Timeout while waiting for config byte!\n");
+        LOG_ERROR("Timeout while waiting for config byte!");
         return PS2_ERROR_TIMEOUT;
     }
     // Disable IRQs clocks of both PS/2 ports, disable translation for port 1.
@@ -480,12 +483,12 @@ ps2_error_codes_t ps2_init_controller(void)
     ps2_send_command(PS2_CMD_TEST_CONTROLLER);
     if (ps2_receive_byte(&response) == PS2_ERROR_TIMEOUT)
     {
-        printf("PS/2: Timeout during controller self test!\n");
+        LOG_ERROR("Timeout during controller self test!");
         return PS2_ERROR_TIMEOUT;
     }
     if (response != PS2_CONTROLLER_TEST_PASSED)
     {
-        printf("PS/2: Controller self test failed! %d\n", response);
+        LOG_ERROR("Controller self test failed! (response=%d)", response);
         return PS2_ERROR_CONTROLLER_TEST_FAILED;
     }
 
@@ -498,7 +501,7 @@ ps2_error_codes_t ps2_init_controller(void)
     ps2_send_command(PS2_CMD_READ_CONFIG_BYTE);
     if (ps2_receive_byte(&response) == PS2_ERROR_TIMEOUT)
     {
-        printf("PS/2: Timeout while checking if port 2 exists!\n");
+        LOG_ERROR("Timeout while checking if port 2 exists!");
         return PS2_ERROR_TIMEOUT;
     }
     if ((response & (1 << 1)) == 0)
@@ -509,29 +512,29 @@ ps2_error_codes_t ps2_init_controller(void)
         ps2_raw_send_byte(PS2_PORT_CMD, config_byte.byte);
 
         ps2_port_2_supported = true;
-        printf("PS/2: Second port is supported.\n");
+        LOG_INFO("Second PS/2 port is supported.");
     }
     else
     {
         ps2_port_2_supported = false;
-        printf("PS/2: Second port is not supported.\n");
+        LOG_INFO("Second PS/2 port is not supported.");
     }
 
     // Perform interface tests for port 1.
     ps2_send_command(PS2_CMD_TEST_PORT_1);
     if (ps2_receive_byte(&response) == PS2_ERROR_TIMEOUT)
     {
-        printf("PS/2: Timeout during port 1 interface test!\n");
+        LOG_ERROR("Timeout during port 1 interface test!");
         return PS2_ERROR_TIMEOUT;
     }
     if (response == PS2_PORT_TEST_PASSED)
     {
         ps2_port_1_works = true;
-        printf("PS/2: Port 1 passed the interface tests.\n");
+        LOG_INFO("Port 1 passed the interface tests.");
     }
     else
     {
-        printf("PS/2: Port 1 didn't pass the interface tests. :(\n");
+        LOG_ERROR("Port 1 didn't pass the interface tests! :(");
     }
 
     // Perform interface tests for port 2 if it is supported.
@@ -540,24 +543,24 @@ ps2_error_codes_t ps2_init_controller(void)
         ps2_send_command(PS2_CMD_TEST_PORT_1);
         if (ps2_receive_byte(&response) == PS2_ERROR_TIMEOUT)
         {
-            printf("PS/2: Timeout during port 2 interface test!\n");
+            LOG_ERROR("Timeout during port 2 interface test!");
             return PS2_ERROR_TIMEOUT;
         }
         if (response == PS2_PORT_TEST_PASSED)
         {
             ps2_port_2_works = true;
-            printf("PS/2: Port 2 passed the interface tests.\n");
+            LOG_INFO("Port 2 passed the interface tests.");
         }
         else
         {
-            printf("PS/2: Port 2 didn't pass the interface tests. :(\n");
+            LOG_ERROR("Port 2 didn't pass the interface tests! :(");
         }
     }
 
     // Check if there are working PS/2 ports. If there are none an error code is returned.
     if (ps2_port_1_works == false && ps2_port_2_works == false)
     {
-        printf("PS/2: There are no working PS/2 ports!\n");
+        LOG_ERROR("There are no working PS/2 ports!");
         return PS2_ERROR_NO_WORKING_PORTS;
     }
 
@@ -568,14 +571,14 @@ ps2_error_codes_t ps2_init_controller(void)
         config_byte.bits.port_1_int_enabled = 1;
         config_byte.bits.port_1_clk_enabled = 0;
 
-        printf("PS/2: Enabled port 1.\n");
+        LOG_INFO("Enabled port 1.");
     }
     if (ps2_port_2_works)
     {
         ps2_send_command(PS2_CMD_ENABLE_PORT_2);
         config_byte.bits.port_2_int_enabled = 1;
         config_byte.bits.port_2_clk_enabled = 0;
-        printf("PS/2: Enabled port 2.\n");
+        LOG_INFO("Enabled port 2.");
     }
     ps2_send_command(PS2_CMD_WRITE_CONFIG_BYTE);
     ps2_raw_send_byte(PS2_PORT_CMD, config_byte.byte);
@@ -585,7 +588,7 @@ ps2_error_codes_t ps2_init_controller(void)
     {
         if (ps2_reset_device(PS2_PORT_1) != PS2_OK)
         {
-            printf("PS/2: Reset of device at port 1 failed!\n");
+            LOG_ERROR("Reset of device at port 1 failed!");
         }
         ps2_ports.port_1_populated = true;
     }
@@ -593,7 +596,7 @@ ps2_error_codes_t ps2_init_controller(void)
     {
         if (ps2_reset_device(PS2_PORT_2) != PS2_OK)
         {
-            printf("PS/2: Reset of device at port 2 failed!\n");
+            LOG_ERROR("Reset of device at port 2 failed!");
         }
         ps2_ports.port_2_populated = true;  
     }
@@ -608,7 +611,7 @@ ps2_error_codes_t ps2_init_controller(void)
         }
         else if (ps2_device_is_mouse(ps2_ports.device_type_port_1))
         {
-            printf("PS/2: There is no mouse driver yet :(\n");
+            LOG_WARNING("Trying to init PS/2 mouse driver, but there is no mouse driver yet. :(");
         }
     }
     if (ps2_ports.port_1_populated)
@@ -620,13 +623,13 @@ ps2_error_codes_t ps2_init_controller(void)
         }
         else if (ps2_device_is_mouse(ps2_ports.device_type_port_2))
         {
-            printf("PS/2: There is no mouse driver yet :(\n");
+            LOG_WARNING("Trying to init PS/2 mouse driver, but there is no mouse driver yet. :(");
         }
     }
 
     // Enable the interrupt used by PS/2 keyboards.
     pic_enable_irq(1);
 
-    printf("PS/2: Controller initialized.\n");
+    LOG_INFO("Controller initialized.");
     return PS2_OK;
 }

@@ -15,6 +15,7 @@
 #include "drivers/pit.h"
 #include "drivers/ps2.h"
 #include "drivers/serial.h"
+#include "logging.h"
 #include "memory/pmm.h"
 #include "terminal.h"
 
@@ -65,21 +66,29 @@ void kmain(void)
     terminal_put_char('\n');
     terminal_set_color(0xffffff);
 
+    logging_set_backend(terminal_log_write, NULL);
+
     gdt_init();
     gdt_install(gdt);
-    // I think if this line is reached the gdt was loaded correctly????
-    // I have do look up for some checks to better check it. At least it didn't crash if you can see this lol
-    printf("GDT: GDT loaded successfully.\n");
 
     idt_init();
     idt_install(idt);
-    // It's the same as with the GDT.. I think if this code is printed, the IDT was loaded correctly.
-    printf("IDT: IDT loaded successfully.\n");
+
+    if (serial_init(COM1, 38400, SERIAL_DATA_BITS_8 | SERIAL_PARITY_NONE | SERIAL_STOP_BITS_1) != SERIAL_OK)
+    {
+        LOG_ERROR("ERROR: Something went wrong setting up COM1 serial port!");
+        hcf();
+    }
+
+    // Switch logging to serial, so I can see it in a scrollable terminal.
+    int serial_config = COM1;
+    logging_set_backend(serial_log_write, &serial_config);
+
 
     // Ensure we really got a memory map.
     if (memmap_request.response == NULL)
     {
-        printf("Could not get Memory Map :(\n");
+        LOG_ERROR("Could not get Memory Map :(");
         hcf();
     }
 
@@ -89,7 +98,7 @@ void kmain(void)
     // Ensure we got the hhdm offset.
     if (hhdm_request.response == NULL)
     {
-        printf("Could not get HHDM :(\n");
+        LOG_ERROR("Could not get HHDM :(");
         hcf();
     }
     
@@ -104,10 +113,8 @@ void kmain(void)
     b = pmm_alloc();
     if (b != NULL)
     {
-        printf("allocated physical address: %p\n", b);
+        LOG_DEBUG("Allocated physical address: %p", b);
     }
-
-    printf("%d\n", pmm_check_page(b));
 
     for (size_t i = 0; i < 5; i++)
     {
@@ -115,36 +122,25 @@ void kmain(void)
         a = pmm_alloc();
         if (a != NULL)
         {
-            printf("allocated physical address: %p\n", a);
+            LOG_DEBUG("Allocated physical address: %p", a);
         }
 
         pmm_free(a);
     }    
 
     pmm_free(b);
-    printf("%d\n", pmm_check_page(b));
 
     b = pmm_alloc();
     if (b != NULL)
     {
-        printf("allocated physical address: %p\n", b);
+        LOG_DEBUG("Allocated physical address: %p", b);
     }
-
-    hcf();
 
     // Initialize the PIC and enable interrupts.
     pic_init(0x20, 0x28);
     asm("sti");
     pit_init_channel(PIT_CHANNEL_0, 1000, PIT_SC_COUNTER_0 | PIT_MODE_SQUARE_WAVE);
     pic_enable_irq(0);
-
-    if (serial_init(COM1, 38400, SERIAL_DATA_BITS_8 | SERIAL_PARITY_NONE | SERIAL_STOP_BITS_1) != SERIAL_OK)
-    {
-        printf("ERROR: Something went wrong setting up COM1 serial port!");
-        hcf();
-    }
-
-    serial_print_line(COM1, "If you can see this, sending strings via serial works! :D\n");
     
     ps2_init_controller();
 

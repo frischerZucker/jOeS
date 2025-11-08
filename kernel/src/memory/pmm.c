@@ -5,6 +5,7 @@
 
 #include "cpu/hcf.h"
 #include "drivers/serial.h"
+#include "logging.h"
 #include "memory/pmm_region.h"
 
 #define PAGE_SIZE_BYTE 4096
@@ -51,7 +52,7 @@ static void pmm_detect_memory(struct limine_memmap_response *memmap, size_t *num
 
     *num_pages = memory_size_byte / PAGE_SIZE_BYTE;
 
-    printf("PMM: Detected %u kiB ^= %u pages memory.\n", memory_size_byte / 1024, *num_pages);
+    LOG_DEBUG("Detected %u kiB ^= %u pages of memory.", memory_size_byte / 1024, *num_pages);
 }
 
 /*!
@@ -72,7 +73,7 @@ static size_t pmm_get_num_required_pages(size_t regions, size_t pages)
 
     required_pages = (required_bytes + PAGE_SIZE_BYTE - 1) / PAGE_SIZE_BYTE;
 
-    printf("PMM: %u B / %u pages are required for the PMMs data.\n", required_bytes, required_pages);
+    LOG_DEBUG("%u B / %u pages are required for PMM data.", required_bytes, required_pages);
 
     return required_pages;
 }
@@ -164,7 +165,7 @@ static pmm_error_codes_t pmm_init_region_structs(struct limine_memmap_response *
             
             if (pmm_region_mark_page_used(&((*region_array_ptr)[i]), page_address) != PMM_REGION_OK)
             {
-                printf("PMM: ERROR: Could not mark page used by PMM as used!\n");
+                LOG_ERROR("Failed to mark a page used by the PMM as used!\n");
                 return PMM_ERROR_INIT_FAILED;
             }
         }        
@@ -377,7 +378,8 @@ pmm_error_codes_t pmm_free(void *ptr)
 */
 pmm_error_codes_t pmm_init(struct limine_memmap_response *memmap, uint64_t hhdm_offset)
 {
-    printf("PMM: HHDM=%p\n", hhdm_offset);
+    LOG_INFO("Initializing PMM...");
+    LOG_DEBUG("HHDM=%p", hhdm_offset);
     phys_to_virt_offset = hhdm_offset;
 
     pmm_print_memmap(memmap);
@@ -404,11 +406,11 @@ pmm_error_codes_t pmm_init(struct limine_memmap_response *memmap, uint64_t hhdm_
     }
     if (pmm_base != (uintptr_t)NULL)
     {
-        printf("PMM: Found space to store data at %p.\n", pmm_base);
+        LOG_DEBUG("Found space to store data at %p.", pmm_base);
     }
     else
     {
-        printf("PMM: ERROR: Could not find space to store data!\n");
+        LOG_ERROR("Could not find space to store PMM data!");
         return PMM_ERROR_INIT_FAILED;
     }
 
@@ -417,7 +419,7 @@ pmm_error_codes_t pmm_init(struct limine_memmap_response *memmap, uint64_t hhdm_
         return PMM_ERROR_INIT_FAILED;
     }        
 
-    printf("PMM: PMM initialized.\n");    
+    LOG_INFO("PMM initialized.");    
 
     return PMM_OK;
 }

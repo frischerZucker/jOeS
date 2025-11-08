@@ -1,4 +1,5 @@
-#include <cpu/gdt.h>
+#include "cpu/gdt.h"
+#include "logging.h"
 
 struct gdt_descriptor gdt[GDT_NUM_ENTRIES];
 
@@ -84,4 +85,6 @@ void gdt_install(struct gdt_descriptor *target)
 
     // Reload all segment registers.
     gdt_load_segments();
+
+    LOG_INFO("GDT loaded successfully.");
 }
