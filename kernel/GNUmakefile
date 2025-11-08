@@ -4,6 +4,9 @@ MAKEFLAGS += -rR
 
 SYSROOT := ../sysroot
 
+# Select a logging level. (0 = Debug, 1 = Info, 2 = Warning, 3 = Error)
+LOGGING_LEVEL := 0
+
 # This is the name that our final executable will have.
 # Change as needed.
 override OUTPUT := test-kernel
@@ -34,7 +37,7 @@ ifeq ($(TOOLCHAIN),llvm)
 endif
 
 # User controllable C flags.
-CFLAGS := -g -O2 -pipe -Iinclude -isystem $(SYSROOT)/usr/include
+CFLAGS := -g -O2 -pipe -Iinclude -isystem $(SYSROOT)/usr/include -DLOGGING_MIN_LEVEL=$(LOGGING_LEVEL)
 
 # User controllable C preprocessor flags. We set none by default.
 CPPFLAGS :=
