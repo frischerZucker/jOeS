@@ -18,3 +18,6 @@ sysroot/
 datasheets/
 
 doku/html/
+
+serial_output
+*.txt
