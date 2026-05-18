@@ -11,11 +11,13 @@
 #include "cpu/gdt.h"
 #include "cpu/hcf.h"
 #include "cpu/idt.h"
+#include "cpu/registers.h"
 #include "drivers/pic.h"
 #include "drivers/pit.h"
 #include "drivers/ps2.h"
 #include "drivers/serial.h"
 #include "logging.h"
+#include "memory/paging.h"
 #include "memory/pmm.h"
 #include "terminal.h"
 
@@ -92,7 +94,7 @@ void kmain(void)
         hcf();
     }
 
-    // Get the memory map and print its entries.
+    // Get the memory map.
     struct limine_memmap_response *memmap = memmap_request.response;
     
     // Ensure we got the hhdm offset.
@@ -109,32 +111,10 @@ void kmain(void)
         hcf();
     }
 
-    int *b = NULL;
-    b = pmm_alloc();
-    if (b != NULL)
-    {
-        LOG_DEBUG("Allocated physical address: %p", b);
-    }
+    union page_table_entry_t *pml4 = (union page_table_entry_t *) ((void *)(read_cr3() & ~0x7ff) + hhdm_response->offset);
+    dump_page_table(pml4, hhdm_response->offset, PML4);
 
-    for (size_t i = 0; i < 5; i++)
-    {
-        int *a = NULL;
-        a = pmm_alloc();
-        if (a != NULL)
-        {
-            LOG_DEBUG("Allocated physical address: %p", a);
-        }
-
-        pmm_free(a);
-    }    
-
-    pmm_free(b);
-
-    b = pmm_alloc();
-    if (b != NULL)
-    {
-        LOG_DEBUG("Allocated physical address: %p", b);
-    }
+    hcf();
 
     // Initialize the PIC and enable interrupts.
     pic_init(0x20, 0x28);
