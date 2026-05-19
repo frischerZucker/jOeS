@@ -153,21 +153,24 @@ def get_memory_blocks(
         last_phys_address = page.phys_address
         last_page_size = page_size
 
+    memory_blocks.append(MemoryBlock(virt_base_address, phys_base_address, size))
+
     return memory_blocks
 
 if __name__ == "__main__":
-    INPUT_FILE: str = os.path.join(os.path.dirname(__file__), "../serial_output")
-    WORK_FILE: str = os.path.join(os.path.dirname(__file__), "temp_analyze_pt_dump.txt")
-    RESULT_FILE: str = os.path.join(os.path.dirname(__file__), "page_table_dump.txt")
+    for idx in [1, 2]:
+        INPUT_FILE: str = os.path.join(os.path.dirname(__file__), f"pt_dump_{idx}.txt")
+        WORK_FILE: str = os.path.join(os.path.dirname(__file__), f"temp_analyze_pt_dump_{idx}.txt")
+        RESULT_FILE: str = os.path.join(os.path.dirname(__file__), f"pt_dump_result_{idx}.txt")
 
-    filter_input(INPUT_FILE, WORK_FILE)
+        filter_input(INPUT_FILE, WORK_FILE)
 
-    pages: list[Page] = get_pages(WORK_FILE)
-    with open(WORK_FILE, "w") as fd:
-        for page in pages:
-            fd.write(f"{page.virt_address:x} -> {page.phys_address:x} ({page.size})\n")
+        pages: list[Page] = get_pages(WORK_FILE)
+        with open(WORK_FILE, "w") as fd:
+            for page in pages:
+                fd.write(f"{page.virt_address:x} -> {page.phys_address:x} ({page.size})\n")
 
-    blocks: list[MemoryBlock] = get_memory_blocks(pages)
-    with open(RESULT_FILE, "w") as fd:
-        for block in blocks:
-            fd.write(f"0x{block.virt_base_address:x} -> 0x{block.phys_base_address:x} | {block.size} B\n")
+        blocks: list[MemoryBlock] = get_memory_blocks(pages)
+        with open(RESULT_FILE, "w") as fd:
+            for block in blocks:
+                fd.write(f"0x{block.virt_base_address:x} -> 0x{block.phys_base_address:x} | {block.size} B\n")
