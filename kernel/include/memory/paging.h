@@ -1,7 +1,31 @@
 #ifndef PAGING_H
 #define PAGING_H
 
+#include <stddef.h>
 #include <stdint.h>
+
+typedef enum
+{
+    PAGING_OK = 0,
+    PAGING_ERROR
+} paging_error_codes_t;
+
+typedef enum
+{
+    PAGE_SIZE_4KB,
+    PAGE_SIZE_2MB,
+    PAGE_SIZE_1GB
+} page_size_t;
+
+#define PAGING_FLAG_PRESENT (1 << 0)
+#define PAGING_FLAG_WRITABLE (1 << 1)
+#define PAGING_FLAG_USER_LEVEL (1 << 2)
+#define PAGING_FLAG_PWT (1 << 3)
+#define PAGING_FLAG_PCD (1 << 4)
+#define PAGING_FLAG_PAGE_SIZE (1 << 7)
+#define PAGING_FLAG_GLOBAL (1 << 8)
+#define PAGING_FLAG_DISABLE_EXECUTION (1 << 63)
+#define PAGING_FLAG_ALL ((1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4) | (1 << 7) | (1 << 8) | (1 << 63))
 
 /*!
     @brief Page table levels.
@@ -32,7 +56,7 @@ union page_table_entry_t
         uint64_t global: 1;
         uint64_t available_1: 3;
         uint64_t base_address: 28;
-        uint64_t reserved: 11;
+        uint64_t reserved: 12;
         uint64_t available_2: 7;
         uint64_t protection_key: 4;
         uint64_t disable_execution: 1;
@@ -58,5 +82,9 @@ union page_table_entry_t
     @param level Current page table level (PML4, PDPR, PD, PT).
 */
 void dump_page_table(union page_table_entry_t *page_table, uint64_t hhdm_offset, page_table_level_t level);
+
+paging_error_codes_t paging_map_page(union page_table_entry_t *pml4, uintptr_t phys, uintptr_t virt, page_size_t page_size, uint64_t flags, ptrdiff_t hhdm_offset);
+
+paging_error_codes_t paging_clone_page_table(union page_table_entry_t *old_pml4, union page_table_entry_t **new_pml4, uint64_t hhdm_offset, page_table_level_t level);
 
 #endif // PAGING_H

@@ -111,10 +111,38 @@ void kmain(void)
         hcf();
     }
 
-    union page_table_entry_t *pml4 = (union page_table_entry_t *) ((void *)(read_cr3() & ~0x7ff) + hhdm_response->offset);
-    dump_page_table(pml4, hhdm_response->offset, PML4);
+    union page_table_entry_t *pml4 = (union page_table_entry_t *) ((read_cr3() & ~0x7ff) + hhdm_response->offset);
+    // LOG_INFO("--- START PAGE TABLE DUMP 1 ---");
+    // dump_page_table(pml4, hhdm_response->offset, PML4);
+    // LOG_INFO("--- END PAGE TABLE DUMP 1 ---");
 
-    hcf();
+    union page_table_entry_t *new_pml4 = NULL;
+    // if (init_page_table(&new_pml4, hhdm_response->offset) != PAGING_OK)
+    // {
+    //     LOG_ERROR("Failed to init new page table.");
+    //     hcf();
+    // }
+
+    if (paging_clone_page_table(pml4, &new_pml4, hhdm_response->offset, PML4) != PAGING_OK)
+    {
+        LOG_ERROR("Failed to clone page table.");
+        hcf();
+    }
+    LOG_INFO("Successfully cloned the page table.");
+
+    // LOG_INFO("--- START PAGE TABLE DUMP 2 ---");
+    // dump_page_table(new_pml4, hhdm_response->offset, PML4);
+    // LOG_INFO("--- END PAGE TABLE DUMP 2 ---");
+
+    // LOG_INFO("Framebuffer @ %p: width=%d, height=%d, pitch=%d", framebuffer_request.response->framebuffers[0]->address, framebuffer_request.response->framebuffers[0]->width, framebuffer_request.response->framebuffers[0]->height, framebuffer_request.response->framebuffers[0]->pitch);
+
+    // hcf();
+
+    LOG_INFO("Before loading cr3");
+    
+    set_cr3(((uint64_t)new_pml4) - hhdm_response->offset);
+
+    LOG_INFO("after loading cr3");
 
     // Initialize the PIC and enable interrupts.
     pic_init(0x20, 0x28);
@@ -123,6 +151,10 @@ void kmain(void)
     pic_enable_irq(0);
     
     ps2_init_controller();
+
+    // logging_set_backend(terminal_log_write, 0);
+
+    LOG_INFO("HEYHO");
 
     hcf();
 }

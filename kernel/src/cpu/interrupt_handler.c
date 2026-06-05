@@ -3,6 +3,7 @@
 #include "stdio.h"
 
 #include "cpu/hcf.h"
+#include "cpu/registers.h"
 #include "drivers/keyboard.h"
 #include "drivers/pic.h"
 #include "drivers/ps2_keyboard.h"
@@ -61,10 +62,14 @@ void interrupt_handler(struct interrupt_stack_frame *stack)
     case INT_SEGMENT_NOT_PRESENT:
     case INT_STACK_SEGMENT_FAULT:
     case INT_GENERAL_PROTECTION_FAULT:
-    case INT_PAGE_FAULT:
     case INT_ALIGNMENT_CHECK:
     case INT_CONTROL_PROTECTION_EXCEPTION:
         LOG_ERROR(interrupt_descriptions[stack->interrupt_vector], stack->error_code);
+        hcf();
+        break;
+    case INT_PAGE_FAULT:
+        uint64_t cr2 = read_cr2();
+        LOG_ERROR(interrupt_descriptions[stack->interrupt_vector], stack->error_code, cr2);
         hcf();
         break;
     // IRQs from the PIC.
@@ -76,6 +81,7 @@ void interrupt_handler(struct interrupt_stack_frame *stack)
         while (kbd_get_key_event_from_buffer(&key_event) != KBD_ERROR_KEY_EVENT_BUFFER_EMPTY)
         {
             printf("%s", kbd_key_event_to_ascii(&key_event));
+            LOG_INFO("%s", kbd_key_event_to_ascii(&key_event));
         }
         pic_send_eoi(0);
         break;

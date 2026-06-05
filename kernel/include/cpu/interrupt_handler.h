@@ -301,7 +301,7 @@ static char *interrupt_descriptions[25] = {
     "Segment Not Present: err=%d\n",
     "Stack-Segment Fault: err=%d\n",
     "General Protection Fault: err=%d\n",
-    "Page Fault: err=%d\n",
+    "Page Fault: err=%d, CR2=%x\n",
     "Intel reserved. This shouldn't come up.\n",
     "x87 FPU Floating-Point Error (Math Fault).\n",
     "Alignment Check: err=%d\n",
