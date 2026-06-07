@@ -25,7 +25,7 @@ typedef enum
 #define PAGING_FLAG_PAGE_SIZE (1 << 7)
 #define PAGING_FLAG_GLOBAL (1 << 8)
 #define PAGING_FLAG_DISABLE_EXECUTION (1 << 63)
-#define PAGING_FLAG_ALL ((1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4) | (1 << 7) | (1 << 8) | (1 << 63))
+#define PAGING_FLAG_ALL ((1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4) | (1 << 7) | (1 << 8) | (1L << 63))
 
 /*!
     @brief Page table levels.
@@ -39,11 +39,55 @@ typedef enum
 } page_table_level_t;
 
 /*!
-    @brief Page table entry.
+    @brief Page table entry types.
+
+    The entry can either be a pointer to another table or describing a page.
 */
-union page_table_entry_t
+typedef enum
 {
-    struct page_table_entry_bits
+    PAGING_ENTRY_POINTER,
+    PAGING_ENTRY_PAGE
+} page_table_entry_type_t;
+
+union pml4_entry_t
+{
+    struct
+    {
+        uint64_t present: 1;
+        uint64_t writable: 1;
+        uint64_t user_level: 1;
+        uint64_t page_write_through: 1;
+        uint64_t page_cache_disable: 1;
+        uint64_t accessed: 1;
+        uint64_t available_1: 1;
+        uint64_t reserved_1: 1;
+        uint64_t available_2: 4;
+        uint64_t base_address: 28;
+        uint64_t reserved_2: 12;
+        uint64_t available_3: 11;
+        uint64_t disable_execution: 1;
+    } pointer_fields;
+};
+
+union pdpr_entry_t
+{
+    struct
+    {
+        uint64_t present: 1;
+        uint64_t writable: 1;
+        uint64_t user_level: 1;
+        uint64_t page_write_through: 1;
+        uint64_t page_cache_disable: 1;
+        uint64_t accessed: 1;
+        uint64_t dirty: 1;
+        uint64_t page_size: 1;
+        uint64_t available_1: 4;
+        uint64_t base_address: 28;
+        uint64_t reserved: 12;
+        uint64_t available_2: 11;
+        uint64_t disable_execution: 1;
+    } pointer_fields;
+    struct
     {
         uint64_t present: 1;
         uint64_t writable: 1;
@@ -55,12 +99,87 @@ union page_table_entry_t
         uint64_t page_size: 1;
         uint64_t global: 1;
         uint64_t available_1: 3;
+        uint64_t page_attribute_table: 1;
+        uint64_t reserved_1: 17;
+        uint64_t base_address: 10;
+        uint64_t reserved_2: 12;
+        uint64_t available_2: 7;
+        uint64_t protection_key: 4;
+        uint64_t disable_execution: 1;
+    } page_fields;
+};
+
+union pd_entry_t
+{
+    struct
+    {
+        uint64_t present: 1;
+        uint64_t writable: 1;
+        uint64_t user_level: 1;
+        uint64_t page_write_through: 1;
+        uint64_t page_cache_disable: 1;
+        uint64_t accessed: 1;
+        uint64_t dirty: 1;
+        uint64_t page_size: 1;
+        uint64_t available_1: 4;
+        uint64_t base_address: 28;
+        uint64_t reserved: 12;
+        uint64_t available_2: 11;
+        uint64_t disable_execution: 1;
+    } pointer_fields;
+    struct
+    {
+        uint64_t present: 1;
+        uint64_t writable: 1;
+        uint64_t user_level: 1;
+        uint64_t page_write_through: 1;
+        uint64_t page_cache_disable: 1;
+        uint64_t accessed: 1;
+        uint64_t dirty: 1;
+        uint64_t page_size: 1;
+        uint64_t global: 1;
+        uint64_t available_1: 3;
+        uint64_t page_attribute_table: 1;
+        uint64_t reserved_1: 8;
+        uint64_t base_address: 19;
+        uint64_t reserved_2: 12;
+        uint64_t available_2: 7;
+        uint64_t protection_key: 4;
+        uint64_t disable_execution: 1;
+    } page_fields;
+};
+
+union pt_entry_t
+{
+    struct
+    {
+        uint64_t present: 1;
+        uint64_t writable: 1;
+        uint64_t user_level: 1;
+        uint64_t page_write_through: 1;
+        uint64_t page_cache_disable: 1;
+        uint64_t accessed: 1;
+        uint64_t dirty: 1;
+        uint64_t page_attribute_table: 1;
+        uint64_t global: 1;
+        uint64_t available_1: 3;
         uint64_t base_address: 28;
         uint64_t reserved: 12;
         uint64_t available_2: 7;
         uint64_t protection_key: 4;
         uint64_t disable_execution: 1;
-    } fields;
+    } page_fields;
+};
+
+/*!
+    @brief Union with all the possible page table entries.
+*/
+union page_table_entry_t
+{
+    union pml4_entry_t pml4;
+    union pdpr_entry_t pdpr;
+    union pd_entry_t pd;
+    union pt_entry_t pt;
     uint64_t raw;
 };
 
