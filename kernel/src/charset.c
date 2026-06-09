@@ -6,7 +6,7 @@
 
 #include <charset.h>
 
-uint8_t charset[95][CHAR_HEIGHT*CHAR_WIDTH] =
+uint8_t charset[95][CHARACTER_HEIGHT*CHARACTER_WIDTH] =
 {
 	[CHARSET_INDEX(' ')] = {
 		0,0,0,0,0,0,0,0,0,0,

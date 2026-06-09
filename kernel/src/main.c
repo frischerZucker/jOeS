@@ -57,7 +57,7 @@ void kmain(void)
     // Fetch a framebuffer.
     struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
 
-    terminal_init(framebuffer, CHAR_WIDTH * 1.3, CHAR_HEIGHT * 2.2);
+    terminal_init(framebuffer, CHARACTER_WIDTH * 1.3, CHARACTER_HEIGHT * 2.2);
 
     terminal_write_string("Joe\n", strlen("Joe\n"));
     terminal_set_color(0xaa0000);

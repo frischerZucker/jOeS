@@ -11,8 +11,8 @@
 
 #include <stdint.h>
 
-#define CHAR_WIDTH 10
-#define CHAR_HEIGHT 10
+#define CHARACTER_WIDTH 10
+#define CHARACTER_HEIGHT 10
 
 #define TAB_WIDTH 4
 
@@ -29,6 +29,6 @@
 /*!
     Bitmaps of all printable ASCII characters.
 */
-extern uint8_t charset[95][CHAR_WIDTH * CHAR_HEIGHT];
+extern uint8_t charset[95][CHARACTER_WIDTH * CHARACTER_HEIGHT];
 
 #endif // CHARSET_H

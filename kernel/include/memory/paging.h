@@ -1,6 +1,7 @@
 #ifndef PAGING_H
 #define PAGING_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -66,7 +67,7 @@ union pml4_entry_t
         uint64_t reserved_2: 12;
         uint64_t available_3: 11;
         uint64_t disable_execution: 1;
-    } pointer_fields;
+    } __attribute__((packed)) pointer_fields;
 };
 
 union pdpr_entry_t
@@ -86,7 +87,7 @@ union pdpr_entry_t
         uint64_t reserved: 12;
         uint64_t available_2: 11;
         uint64_t disable_execution: 1;
-    } pointer_fields;
+    } __attribute__((packed)) pointer_fields;
     struct
     {
         uint64_t present: 1;
@@ -106,7 +107,7 @@ union pdpr_entry_t
         uint64_t available_2: 7;
         uint64_t protection_key: 4;
         uint64_t disable_execution: 1;
-    } page_fields;
+    } __attribute__((packed)) page_fields;
 };
 
 union pd_entry_t
@@ -126,7 +127,7 @@ union pd_entry_t
         uint64_t reserved: 12;
         uint64_t available_2: 11;
         uint64_t disable_execution: 1;
-    } pointer_fields;
+    } __attribute__((packed)) pointer_fields;
     struct
     {
         uint64_t present: 1;
@@ -146,7 +147,7 @@ union pd_entry_t
         uint64_t available_2: 7;
         uint64_t protection_key: 4;
         uint64_t disable_execution: 1;
-    } page_fields;
+    } __attribute__((packed)) page_fields;
 };
 
 union pt_entry_t
@@ -168,7 +169,7 @@ union pt_entry_t
         uint64_t available_2: 7;
         uint64_t protection_key: 4;
         uint64_t disable_execution: 1;
-    } page_fields;
+    } __attribute__((packed)) page_fields;
 };
 
 /*!

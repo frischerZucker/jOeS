@@ -160,6 +160,8 @@ paging_error_codes_t paging_clone_page_table(union page_table_entry_t *old_page_
     static int16_t pd_idx = -1;
     static int16_t pt_idx = -1;
 
+    paging_get_virt_address_from_indices(0, 0, 0, 0);
+
     // Allocate memory for the PML4 if necessary.
     if (level == PML4 && *new_pml4 == NULL)
     {
