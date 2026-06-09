@@ -13,7 +13,7 @@ cd $PROJECT_ROOT_DIR
 
 # Call the kernels GNUmakefile to build it.
 cd kernel
-bear -- make TOOLCHAIN_PREFIX=$TOOLCHAIN_PREFIX
+make TOOLCHAIN_PREFIX=$TOOLCHAIN_PREFIX
 if [ $? != 0 ]; then
     echo "ERROR: Building the kernel failed!"
     exit 1
