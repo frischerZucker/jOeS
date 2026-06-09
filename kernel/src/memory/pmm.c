@@ -3,8 +3,6 @@
 #include "stdio.h"
 #include "string.h"
 
-#include "cpu/hcf.h"
-#include "drivers/serial.h"
 #include "logging.h"
 #include "memory/pmm_region.h"
 

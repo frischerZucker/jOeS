@@ -86,7 +86,7 @@ pmm_page_status_t pmm_check_page(void *ptr);
 
     @returns Pointer to the allocated physical page, or NULL if no free page was found.
 */
-void * pmm_alloc();
+[[nodiscard("Memory cannot be freed it its address is not known saved.")]] void * pmm_alloc();
 
 /*!
     @brief Frees a single physical memory page.

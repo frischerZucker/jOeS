@@ -1,7 +1,5 @@
 #include "drivers/ps2_keyboard.h"
 
-#include "stdio.h"
-
 #include "drivers/ps2.h"
 #include "logging.h"
 
