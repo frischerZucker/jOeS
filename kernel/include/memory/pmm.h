@@ -1,7 +1,15 @@
 /*!
     @file pmm.h
 
-    @brief TESTTEST.
+    @brief Physical memory manager for page-level allocation.
+
+    Provides an interface for managing physical memory regions discovered through the Limine memory map.
+    Tracks usable and reserved memory, maintains bitmaps for page allocation, and exposes functions for:
+    - initializing the PMM and its metadata structures
+    - allocating and freeing pages
+    - checking the status of a page (free/used)
+    
+    It operates on 4 kB pages and uses a higher-half direct map offset for phys-to-virt translation when accessing its own metadata.
 
     @author frischerZucker
 */
@@ -86,7 +94,7 @@ pmm_page_status_t pmm_check_page(void *ptr);
 
     @returns Pointer to the allocated physical page, or NULL if no free page was found.
 */
-[[nodiscard("Memory cannot be freed it its address is not known saved.")]] void * pmm_alloc();
+[[nodiscard("It will be quite hard to free memory if u don't remember its address.")]] void * pmm_alloc();
 
 /*!
     @brief Frees a single physical memory page.

@@ -30,9 +30,7 @@ The next chapter on this journey will be memory management. I plan on implementi
 Let's see how this will turn out and how long it takes! :D 
 
 **Update:** 
-I implemented the PMM. Yayy! :) 
-But for now I don't got the time and mental capacity to wrap my head around paging and implement a VMM.
-So I will work more irregulary on easier stuff instead until this changes.
+So I found the time to work on this again and I think paging is now working! :)
 
 ## Project Structure
 ```
@@ -44,11 +42,13 @@ So I will work more irregulary on easier stuff instead until this changes.
 |         ├── include/           
 |         |          ├── cpu/       # Headers for CPU specific code
 |         |          ├── drivers/   # Driver headers
+|         |          ├── memory/    # Memory headers
 |         |          └── *.h        # General headers
 |         ├── linker_scripts/       # kernel linker scripts
 |         ├── src/               
 |         |      ├── cpu/           # Source files for CPU specific code
 |         |      ├── drivers/       # Driver source files
+|         |      ├── memory/        # Memory related source files
 |         |      └── *.c            # General source files
 |         └── GNUmakefile           # kernel makefile
 ├── libc/                    

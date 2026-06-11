@@ -21,3 +21,5 @@ doku/html/
 
 serial_output
 *.txt
+
+compile_commands.json

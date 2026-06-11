@@ -1,6 +1,5 @@
 #include "memory/pmm_region.h"
 
-#include "stdio.h"
 #include "string.h"
 
 #include "logging.h"

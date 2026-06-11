@@ -1,6 +1,5 @@
 #include "drivers/serial.h"
 
-#include "stdio.h"
 #include "string.h"
 
 #include "cpu/port_io.h"

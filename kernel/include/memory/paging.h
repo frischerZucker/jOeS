@@ -1,3 +1,15 @@
+/*!
+    @file paging.h
+
+    @brief Paging module containing page table structures, mapping, unmapping and address translation.
+
+    Provides data structures, constants and functions for managing 4-level x84_64 page tables.
+    Supports mapping and unmapping of 4 kB, 2 MB and 1 GB pages, resolving virtual addresses, cloning page tables.
+    Also includes a function for dumping page tables for debugging.
+
+    @author frischerZucker
+*/
+
 #ifndef PAGING_H
 #define PAGING_H
 

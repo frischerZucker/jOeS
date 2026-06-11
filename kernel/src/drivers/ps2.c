@@ -1,7 +1,7 @@
 #include "drivers/ps2.h"
 
-#include <stdbool.h>
-#include "stdio.h"
+#include "stdbool.h"
+#include "stddef.h"
 
 #include "cpu/port_io.h"
 #include "drivers/pic.h"

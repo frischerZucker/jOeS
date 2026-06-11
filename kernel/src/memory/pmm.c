@@ -85,7 +85,7 @@ static size_t pmm_get_num_required_pages(size_t regions, size_t pages)
     
     @param memmap Pointer to a Limine memmap struct.
 */
-static void pmm_print_memmap(struct limine_memmap_response *memmap)
+[[maybe_unused]] static void pmm_print_memmap(struct limine_memmap_response *memmap)
 {
     size_t memmap_num_entries = memmap->entry_count;
     printf("Memory Map:\nBase\tLength\tType\n");
@@ -379,8 +379,6 @@ pmm_error_codes_t pmm_init(struct limine_memmap_response *memmap, uint64_t hhdm_
     LOG_INFO("Initializing PMM...");
     LOG_DEBUG("HHDM=%p", hhdm_offset);
     phys_to_virt_offset = hhdm_offset;
-
-    pmm_print_memmap(memmap);
  
     pmm_detect_memory(memmap, &pmm_num_regions, &pmm_memory_size_pages);
 
