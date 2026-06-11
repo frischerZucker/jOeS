@@ -11,11 +11,13 @@
 #include "cpu/gdt.h"
 #include "cpu/hcf.h"
 #include "cpu/idt.h"
+#include "cpu/registers.h"
 #include "drivers/pic.h"
 #include "drivers/pit.h"
 #include "drivers/ps2.h"
 #include "drivers/serial.h"
 #include "logging.h"
+#include "memory/paging.h"
 #include "memory/pmm.h"
 #include "terminal.h"
 
@@ -55,7 +57,7 @@ void kmain(void)
     // Fetch a framebuffer.
     struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
 
-    terminal_init(framebuffer, CHAR_WIDTH * 1.3, CHAR_HEIGHT * 2.2);
+    terminal_init(framebuffer, CHARACTER_WIDTH * 1.3, CHARACTER_HEIGHT * 2.2);
 
     terminal_write_string("Joe\n", strlen("Joe\n"));
     terminal_set_color(0xaa0000);
@@ -84,7 +86,6 @@ void kmain(void)
     int serial_config = COM1;
     logging_set_backend(serial_log_write, &serial_config);
 
-
     // Ensure we really got a memory map.
     if (memmap_request.response == NULL)
     {
@@ -92,7 +93,7 @@ void kmain(void)
         hcf();
     }
 
-    // Get the memory map and print its entries.
+    // Get the memory map.
     struct limine_memmap_response *memmap = memmap_request.response;
     
     // Ensure we got the hhdm offset.
@@ -109,32 +110,24 @@ void kmain(void)
         hcf();
     }
 
-    int *b = NULL;
-    b = pmm_alloc();
-    if (b != NULL)
+    paging_init((ptrdiff_t)hhdm_response->offset);
+
+    union page_table_entry_t *old_pml4 = (union page_table_entry_t *) ((read_cr3() & ~0x7ff) + hhdm_response->offset);
+
+    union page_table_entry_t *pml4 = NULL;
+
+    if (paging_clone_page_table(old_pml4, &pml4, PML4) != PAGING_OK)
     {
-        LOG_DEBUG("Allocated physical address: %p", b);
+        LOG_ERROR("Failed to clone page table.");
+        hcf();
     }
+    LOG_INFO("Successfully cloned the page table.");
 
-    for (size_t i = 0; i < 5; i++)
-    {
-        int *a = NULL;
-        a = pmm_alloc();
-        if (a != NULL)
-        {
-            LOG_DEBUG("Allocated physical address: %p", a);
-        }
+    LOG_INFO("Before loading cr3");
+    
+    set_cr3(((uint64_t)pml4) - hhdm_response->offset);
 
-        pmm_free(a);
-    }    
-
-    pmm_free(b);
-
-    b = pmm_alloc();
-    if (b != NULL)
-    {
-        LOG_DEBUG("Allocated physical address: %p", b);
-    }
+    LOG_INFO("after loading cr3");
 
     // Initialize the PIC and enable interrupts.
     pic_init(0x20, 0x28);
@@ -143,6 +136,20 @@ void kmain(void)
     pic_enable_irq(0);
     
     ps2_init_controller();
+
+    LOG_INFO("Test mapping and unmapping a page...");
+
+    if (paging_map_page(pml4, 0x7fb000, 0x7fb000, PAGE_SIZE_4KB, PAGING_FLAG_PRESENT | PAGING_FLAG_WRITABLE))
+    {
+        LOG_ERROR("Failed to map page");
+    }
+    
+    if (paging_unmap_page(pml4, 0x7fb000, PAGE_SIZE_4KB))
+    {
+        LOG_ERROR("Failed to unmap page");
+    }
+
+    LOG_INFO("No erros. Seems to work i guess.");
 
     hcf();
 }

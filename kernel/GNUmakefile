@@ -5,7 +5,7 @@ MAKEFLAGS += -rR
 SYSROOT := ../sysroot
 
 # Select a logging level. (0 = Debug, 1 = Info, 2 = Warning, 3 = Error)
-LOGGING_LEVEL := 0
+LOGGING_LEVEL := 1
 
 # This is the name that our final executable will have.
 # Change as needed.
@@ -61,7 +61,7 @@ endif
 override CFLAGS += \
     -Wall \
     -Wextra \
-    -std=gnu11 \
+    -std=gnu2x \
     -ffreestanding \
     -fno-stack-protector \
     -fno-stack-check \

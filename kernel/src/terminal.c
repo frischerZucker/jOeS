@@ -1,6 +1,7 @@
 #include <terminal.h>
 
 #include <charset.h>
+#include "drivers/serial.h"
 #include <framebuffer.h>
 
 static struct terminal terminal;

@@ -1,7 +1,5 @@
 #include "drivers/pit.h"
 
-#include "stdio.h"
-
 #include "cpu/port_io.h"
 #include "logging.h"
 

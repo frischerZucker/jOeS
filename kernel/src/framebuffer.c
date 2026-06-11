@@ -46,12 +46,12 @@ void framebuffer_draw_char(struct limine_framebuffer *framebuffer, char c, uint1
     uint32_t *fb_ptr = framebuffer->address;
 
     size_t x, y;
-    for (y = 0; y < CHAR_HEIGHT * 2; y++)
+    for (y = 0; y < CHARACTER_HEIGHT * 2; y++)
     {
-        for (x = 0; x < CHAR_WIDTH * 2; x++)
+        for (x = 0; x < CHARACTER_WIDTH * 2; x++)
         {
             // if the pixels bit in the bitmap is set, a pixel is drawn on the framebuffer
-            if (CHARSET(c)[(x / 2) + (y / 2) * CHAR_WIDTH] == 1)
+            if (CHARSET(c)[(x / 2) + (y / 2) * CHARACTER_WIDTH] == 1)
             {
                 fb_ptr[(start_y + y) * (framebuffer->pitch / (framebuffer->bpp / 8)) + start_x + x] = color;
             }
