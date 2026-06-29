@@ -4,12 +4,50 @@
 
 #include "logging.h"
 #include "memory/pmm.h"
-#include <stdint.h>
 
 #define PAGE_TABLE_NUM_ENTRIES 512
 
+extern uint8_t _KERNEL_PAGE_TABLES_START[];
+extern uint8_t _KERNEL_PAGE_TABLES_END[];
+
+int paging_allocated_pages = 0;
+
 // For now I just use a global offset for virtual to physical translation.
 static ptrdiff_t g_hhdm_offset = (ptrdiff_t)NULL;
+
+static union page_table_entry_t *page_table_free_list[16];
+static int free_list_idx = 15;
+
+static union page_table_entry_t *alloc_page_table(void)
+{
+    if (free_list_idx < 0)
+    {
+        LOG_ERROR("No free pages for page tables left.");
+        return NULL;
+    }
+
+    union page_table_entry_t *table = page_table_free_list[free_list_idx];
+
+    page_table_free_list[free_list_idx] = NULL;
+    free_list_idx = free_list_idx - 1;
+
+    LOG_INFO("Allocating page table @ %p (idx were %d, is now %d)", table, free_list_idx+1, free_list_idx);
+    return table;
+}
+
+static paging_error_codes_t free_page_table(union page_table_entry_t *table)
+{
+    if (free_list_idx >= 15)
+    {
+        LOG_ERROR("Page table free list is already full?!");
+        return PAGING_ERROR;
+    }
+
+    free_list_idx = free_list_idx + 1;
+    page_table_free_list[free_list_idx] = table;
+    
+    return PAGING_OK;
+}
 
 /*!
     @brief Invalidate a cached page entry in TLB.
@@ -54,7 +92,8 @@ static void paging_check_for_empty_table(union page_table_entry_t *table, union 
     {
         LOG_DEBUG("Table is empty. Remove table @%d from parent table.", idx_in_parent_table);
         parent_table[idx_in_parent_table].pml4.pointer_fields.present = 0;
-        pmm_free(((void *)table) - g_hhdm_offset);
+        // pmm_free(((void *)table) - g_hhdm_offset);
+        free_page_table(table);
     }
 }
 
@@ -205,7 +244,10 @@ static paging_error_codes_t paging_map_page_without_tlb_invalidation(union page_
     union page_table_entry_t *pdpr = NULL;
     if (pml4[pml4_idx].pml4.pointer_fields.present == 0)
     {
-        pdpr = pmm_alloc() + g_hhdm_offset;
+        // pdpr = pmm_alloc() + g_hhdm_offset;
+        pdpr = alloc_page_table();
+        LOG_INFO("Allocated pdpr @ %p", pdpr);
+        paging_allocated_pages = paging_allocated_pages + 1;
         if (pdpr == NULL)
         {
             LOG_ERROR("Failed to allocate memory for the PDPR.");
@@ -234,7 +276,10 @@ static paging_error_codes_t paging_map_page_without_tlb_invalidation(union page_
     union page_table_entry_t *pd = NULL;
     if (pdpr[pdpr_idx].pdpr.pointer_fields.present == 0)
     {
-        pd = pmm_alloc() + g_hhdm_offset;
+        // pd = pmm_alloc() + g_hhdm_offset;
+        pd = alloc_page_table();
+        LOG_INFO("Allocated pd @ %p", pd);
+        paging_allocated_pages = paging_allocated_pages + 1;
         if (pd == NULL)
         {
             LOG_ERROR("Failed to allocate memory for the PD.");
@@ -263,7 +308,10 @@ static paging_error_codes_t paging_map_page_without_tlb_invalidation(union page_
     union page_table_entry_t *pt = NULL;
     if (pd[pd_idx].pd.pointer_fields.present == 0)
     {
-        pt = pmm_alloc() + g_hhdm_offset;
+        // pt = pmm_alloc() + g_hhdm_offset;
+        pt = alloc_page_table();
+        LOG_INFO("Allocated pt @ %p", pt);
+        paging_allocated_pages = paging_allocated_pages + 1;
         if (pt == NULL)
         {
             LOG_ERROR("Failed to allocate memory for the PT.");
@@ -344,13 +392,23 @@ uintptr_t paging_resolve_virtual_address(union page_table_entry_t *pml4, uintptr
 }
 
 /*!
-    @brief Initializes the global HHDM offset.
+    @brief Initialize the paging module.
+
+    Sets the HHDM offset used for the kernels page tables.
+    Initializes the free list for early page table allocation (before the VMM is setup).
 
     @param hhdm_offset HHDM offset used for address translation.
 */
 void paging_init(ptrdiff_t hhdm_offset)
 {
     g_hhdm_offset = hhdm_offset;
+
+    // Initialize the free list for early page table alloction.
+    for (size_t idx = 0; idx < 16; idx++)
+    {
+        page_table_free_list[idx] = (union page_table_entry_t *)(_KERNEL_PAGE_TABLES_START + idx*4096);
+        LOG_INFO("paging free list entry @ %d -> %p", idx, page_table_free_list[idx]);
+    }
 }
 
 /*!
@@ -456,7 +514,11 @@ paging_error_codes_t paging_clone_page_table(union page_table_entry_t *old_page_
     // Allocate memory for the PML4 if necessary.
     if (level == PML4 && *new_pml4 == NULL)
     {
-        *new_pml4 = pmm_alloc() + g_hhdm_offset;
+        // *new_pml4 = pmm_alloc() + g_hhdm_offset;
+        void *temp = alloc_page_table();
+        *new_pml4 = (union page_table_entry_t *)temp;
+        LOG_INFO("Allocated pml4 @ %p (temp=%p)", new_pml4, temp);
+        paging_allocated_pages = paging_allocated_pages + 1;
         if (*new_pml4 == NULL)
         {
             LOG_ERROR("Failed to allocate new pml4.");

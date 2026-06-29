@@ -108,7 +108,6 @@ vmm_error_codes_t vmm_init_kernel_vmm(struct vmm *kernel_vmm, union page_table_e
 
     kernel_vmm->page_table = kernel_page_table;
 
-    // TODO: Add blobs for used memory
     // Add the first entry for the kernels memory.
     kernel_vmm->used_list = vmm_alloc_blob();
     kernel_vmm->used_list->base_address = (uintptr_t)_KERNEL_START;
@@ -116,6 +115,7 @@ vmm_error_codes_t vmm_init_kernel_vmm(struct vmm *kernel_vmm, union page_table_e
     kernel_vmm->used_list->next_blob = NULL;
     kernel_vmm->used_list->flags = 0;
 
+    // Memory used to store the PMMs metadata.
     struct vmm_blob_t *pmm_region = vmm_alloc_blob();
     pmm_region->base_address = (uintptr_t)_KERNEL_PMM_START;
     pmm_region->length = (uintptr_t)(_KERNEL_PMM_END - _KERNEL_PMM_START);
@@ -123,7 +123,7 @@ vmm_error_codes_t vmm_init_kernel_vmm(struct vmm *kernel_vmm, union page_table_e
     pmm_region->flags = 0;
     vmm_insert_blob(kernel_vmm, pmm_region);
 
-    LOG_INFO("PMM region: %p to %p", pmm_region->base_address, pmm_region->length);
+    // TODO: Add entries for the page tables
 
     return VMM_OK;
 }

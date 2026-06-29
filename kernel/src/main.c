@@ -25,6 +25,8 @@
 extern uint8_t _KERNEL_START;
 extern uint8_t _KERNEL_END;
 
+extern size_t paging_allocated_pages;
+
 // set limine base revision to 3
 __attribute__((used, section(".limine_requests"))) static volatile LIMINE_BASE_REVISION(3);
 
@@ -126,12 +128,9 @@ void kmain(void)
         hcf();
     }
     LOG_INFO("Successfully cloned the page table.");
-
-    LOG_INFO("Before loading cr3");
-    
     set_cr3(((uint64_t)kernel_page_table) - hhdm_response->offset);
 
-    LOG_INFO("after loading cr3");
+    LOG_INFO("pages used for page tables: %d", paging_allocated_pages);
 
     struct vmm kernel_vmm = {};
     vmm_init_kernel_vmm(&kernel_vmm, kernel_page_table);
