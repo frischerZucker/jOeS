@@ -19,7 +19,11 @@
 #include "logging.h"
 #include "memory/paging.h"
 #include "memory/pmm.h"
+#include "memory/vmm.h"
 #include "terminal.h"
+
+extern uint8_t _KERNEL_START;
+extern uint8_t _KERNEL_END;
 
 // set limine base revision to 3
 __attribute__((used, section(".limine_requests"))) static volatile LIMINE_BASE_REVISION(3);
@@ -114,9 +118,9 @@ void kmain(void)
 
     union page_table_entry_t *old_pml4 = (union page_table_entry_t *) ((read_cr3() & ~0x7ff) + hhdm_response->offset);
 
-    union page_table_entry_t *pml4 = NULL;
+    union page_table_entry_t *kernel_page_table = NULL;
 
-    if (paging_clone_page_table(old_pml4, &pml4, PML4) != PAGING_OK)
+    if (paging_clone_page_table(old_pml4, &kernel_page_table, PML4) != PAGING_OK)
     {
         LOG_ERROR("Failed to clone page table.");
         hcf();
@@ -125,9 +129,14 @@ void kmain(void)
 
     LOG_INFO("Before loading cr3");
     
-    set_cr3(((uint64_t)pml4) - hhdm_response->offset);
+    set_cr3(((uint64_t)kernel_page_table) - hhdm_response->offset);
 
     LOG_INFO("after loading cr3");
+
+    struct vmm kernel_vmm = {};
+    vmm_init_kernel_vmm(&kernel_vmm, kernel_page_table);
+
+    hcf();
 
     // Initialize the PIC and enable interrupts.
     pic_init(0x20, 0x28);
@@ -139,12 +148,12 @@ void kmain(void)
 
     LOG_INFO("Test mapping and unmapping a page...");
 
-    if (paging_map_page(pml4, 0x7fb000, 0x7fb000, PAGE_SIZE_4KB, PAGING_FLAG_PRESENT | PAGING_FLAG_WRITABLE))
+    if (paging_map_page(kernel_page_table, 0x7fb000, 0x7fb000, PAGE_SIZE_4KB, PAGING_FLAG_PRESENT | PAGING_FLAG_WRITABLE))
     {
         LOG_ERROR("Failed to map page");
     }
     
-    if (paging_unmap_page(pml4, 0x7fb000, PAGE_SIZE_4KB))
+    if (paging_unmap_page(kernel_page_table, 0x7fb000, PAGE_SIZE_4KB))
     {
         LOG_ERROR("Failed to unmap page");
     }

@@ -28,6 +28,8 @@ SECTIONS
     /* Move to the next memory page for .text. */
     . = ALIGN(CONSTANT(MAXPAGESIZE));
 
+    _KERNEL_START = .;
+
     .text : {
         *(.text .text.*)
     } : text
@@ -52,7 +54,16 @@ SECTIONS
     .bss : {
         *(.bss .bss.*)
         *(COMMON)
+
+        /* Reserve 10 pages for storing metadata of the kernels VMM -> One entry is 32 Byte, so this should be enough for 1280 linked-list entries */
+        . = ALIGN(4096);
+        _KERNEL_VMM_START = .;
+        . = . + 4096 * 10;
+        _KERNEL_VMM_END = .;
+
     } : data
+
+    _KERNEL_END = .;
 
     /* Removes unnecessary metadata. */
     /DISCARD/ : {

@@ -8,6 +8,9 @@
 
 #define PAGE_SIZE_BYTE 4096
 
+uint8_t *_KERNEL_PMM_START;
+uint8_t *_KERNEL_PMM_END;
+
 static size_t pmm_memory_size_pages = 0;
 static size_t pmm_num_regions = 0;
 
@@ -414,6 +417,10 @@ pmm_error_codes_t pmm_init(struct limine_memmap_response *memmap, uint64_t hhdm_
     {
         return PMM_ERROR_INIT_FAILED;
     }        
+
+    // Mark the boundaries of the region used to store the PMM metadata. 
+    _KERNEL_PMM_START = (uint8_t *)phys_to_virt(pmm_base, phys_to_virt_offset);
+    _KERNEL_PMM_END = (uint8_t *)phys_to_virt(pmm_base + required_pages * PAGE_SIZE_BYTE, phys_to_virt_offset);
 
     LOG_INFO("PMM initialized.");    
 
