@@ -130,10 +130,9 @@ void kmain(void)
     LOG_INFO("Successfully cloned the page table.");
     set_cr3(((uint64_t)kernel_page_table) - hhdm_response->offset);
 
-    LOG_INFO("pages used for page tables: %d", paging_allocated_pages);
-
     struct vmm kernel_vmm = {};
     vmm_init_kernel_vmm(&kernel_vmm, kernel_page_table);
+    vmm_dump(kernel_vmm);
 
     hcf();
 

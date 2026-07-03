@@ -208,6 +208,9 @@ union page_table_entry_t
     uint64_t raw;
 };
 
+extern void *paging_used_pages_list[64];
+extern int paging_used_pages_list_idx;
+
 /*!
     @brief Initializes the global HHDM offset.
 

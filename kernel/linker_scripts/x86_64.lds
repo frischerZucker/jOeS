@@ -60,13 +60,6 @@ SECTIONS
         _KERNEL_VMM_START = .;
         . = . + 4096 * 10;
         _KERNEL_VMM_END = .;
-
-        /* Reserve 16 pages for storing page tables. This should be enough until the VMM is setup. */
-        . = ALIGN(4096);
-        _KERNEL_PAGE_TABLES_START = .;
-        . = . + 4096 * 16;
-        _KERNEL_PAGE_TABLES_END = .;
-
     } : data
 
     _KERNEL_END = .;

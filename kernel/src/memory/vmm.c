@@ -3,7 +3,6 @@
 #include "logging.h"
 #include "memory/paging.h"
 #include "memory/pmm.h"
-#include <stdint.h>
 
 extern uint8_t _KERNEL_START[];
 extern uint8_t _KERNEL_END[];
@@ -14,8 +13,15 @@ extern uint8_t *_KERNEL_PMM_END;
 extern uint8_t _KERNEL_VMM_START[];
 extern uint8_t _KERNEL_VMM_END[];
 
+bool vmm_initialized = false;
+
 static struct vmm_blob_t *vmm_blob_free_list = NULL;
 
+/*!
+    @brief Grab a VMM entry from the free list.
+
+    @returns NULL if there are no free VMM entries left, otherwise a pointer to the VMM entry.
+*/
 [[nodiscard]] static struct vmm_blob_t *vmm_alloc_blob()
 {
     if (vmm_blob_free_list == NULL)
@@ -32,6 +38,9 @@ static struct vmm_blob_t *vmm_blob_free_list = NULL;
     return new_blob;
 }
 
+/*!
+    @brief Add a VMM entry to the free list.
+*/
 [[maybe_unused]] static void vmm_free_blob(struct vmm_blob_t *blob)
 {
     // Set the lists current head as the blobs next blob.
@@ -40,6 +49,18 @@ static struct vmm_blob_t *vmm_blob_free_list = NULL;
     vmm_blob_free_list = blob;
 }
 
+/*!
+    @brief Insert a VMM entry into a VMMs used list.
+
+    Iterates through the used list and checks where the new entry should be inserted. 
+    This means: end of last entry < base address of the new entry & base of next entry > end of the new entry.
+    If a matching spot is found, the entry is inserted into the list.
+
+    @param vmm Pointer to the VMM object into thats used list the entry shall be inserted.
+    @param blob Pointer to the VMM entry to insert.
+
+    @returns VMM_OK if the entry was successfully inserted, otherwise VMM_ERROR.
+*/
 static vmm_error_codes_t vmm_insert_blob(struct vmm *vmm, struct vmm_blob_t *blob)
 {
     struct vmm_blob_t *entry = vmm->used_list;
@@ -93,6 +114,43 @@ static vmm_error_codes_t vmm_insert_blob(struct vmm *vmm, struct vmm_blob_t *blo
     return VMM_ERROR;
 }
 
+/*!
+    @brief Dump information about a VMM object.
+
+    Logs information about each entry of the VMM object (base address, length, flags) and the number of entries.
+
+    @param vmm VMM object which information shall be dumped.
+*/
+[[maybe_unused]] void vmm_dump(struct vmm vmm)
+{
+    LOG_INFO("--- Start VMM dump ---");
+
+    size_t num_entries = 0;
+
+    struct vmm_blob_t *entry = vmm.used_list;
+    while (entry != NULL)
+    {
+        LOG_INFO("VMM region @ %p, length=%d kB, flags=0x%x", entry->base_address, entry->length, entry->flags);
+        num_entries = num_entries + 1;
+
+        entry = entry->next_blob;
+    }
+    
+    LOG_INFO("The VMM object has %d entries.", num_entries);
+}
+
+/*!
+    @brief Initialize the kernel VMM.
+
+    Initializes the free list for kernel VMM entries.
+    Creates a VMM object to be used as the kernels VMM.
+    Adds entries for memory used by the kernel, PMM and page tables.
+
+    @param kernel_vmm Pointer to the VMM object to initialize.
+    @param kernel_page_table Pointer to the page table used by the kernel.
+
+    @returns VMM_OK if the VMM is setup correctly, otherwise VMM_ERROR.
+*/
 vmm_error_codes_t vmm_init_kernel_vmm(struct vmm *kernel_vmm, union page_table_entry_t *kernel_page_table)
 {
     size_t available_space = _KERNEL_VMM_END - _KERNEL_VMM_START;
@@ -110,20 +168,71 @@ vmm_error_codes_t vmm_init_kernel_vmm(struct vmm *kernel_vmm, union page_table_e
 
     // Add the first entry for the kernels memory.
     kernel_vmm->used_list = vmm_alloc_blob();
+    if (kernel_vmm->used_list == NULL)
+    {
+        LOG_ERROR("Failed to allocate VMM region.");
+        return VMM_ERROR;
+    }
     kernel_vmm->used_list->base_address = (uintptr_t)_KERNEL_START;
-    kernel_vmm->used_list->length = (uintptr_t)(_KERNEL_END - _KERNEL_START);
+    kernel_vmm->used_list->length = (size_t)(_KERNEL_END - _KERNEL_START);
     kernel_vmm->used_list->next_blob = NULL;
     kernel_vmm->used_list->flags = 0;
 
     // Memory used to store the PMMs metadata.
     struct vmm_blob_t *pmm_region = vmm_alloc_blob();
+    if (pmm_region == NULL)
+    {
+        LOG_ERROR("Failed to allocate PMM metadata region.");
+        return VMM_ERROR;
+    }
     pmm_region->base_address = (uintptr_t)_KERNEL_PMM_START;
-    pmm_region->length = (uintptr_t)(_KERNEL_PMM_END - _KERNEL_PMM_START);
+    pmm_region->length = (size_t)(_KERNEL_PMM_END - _KERNEL_PMM_START);
     pmm_region->next_blob = NULL;
     pmm_region->flags = 0;
     vmm_insert_blob(kernel_vmm, pmm_region);
 
-    // TODO: Add entries for the page tables
+    // Add entries for the memory used for page tables.
+    uintptr_t region_start = (uintptr_t)paging_used_pages_list[0];
+    size_t region_len = 0x1000;
+    for (int idx = 1; idx < paging_used_pages_list_idx; idx++)
+    {   
+        if ((uintptr_t)paging_used_pages_list[idx] - region_start == region_len)
+        {
+            region_len = region_len + 0x1000;
+        }
+        else
+        {
+            LOG_DEBUG("Page table region @ %p (%d kB)", region_start, region_len / 1024);
+            struct vmm_blob_t *paging_region = vmm_alloc_blob();
+            if (paging_region == NULL)
+            {
+                LOG_ERROR("Failed to allocate page table region.");
+                return VMM_ERROR;
+            }
+            paging_region->base_address = region_start;
+            paging_region->length = region_len;
+            paging_region->next_blob = NULL;
+            paging_region->flags = 0;
+            vmm_insert_blob(kernel_vmm, paging_region);
+
+            region_start = (uintptr_t)paging_used_pages_list[idx];
+            region_len = 0x1000;
+        }
+    }
+    LOG_DEBUG("Page table region @ %p (%d kB)", region_start, region_len / 1024);
+    struct vmm_blob_t *paging_region = vmm_alloc_blob();
+    if (paging_region == NULL)
+    {
+        LOG_ERROR("Failed to allocate page table region.");
+        return VMM_ERROR;
+    }
+    paging_region->base_address = region_start;
+    paging_region->length = region_len;
+    paging_region->next_blob = NULL;
+    paging_region->flags = 0;
+    vmm_insert_blob(kernel_vmm, paging_region);
+
+    vmm_initialized = true;
 
     return VMM_OK;
 }
