@@ -21,20 +21,20 @@ typedef enum
     VMM_ERROR
 } vmm_error_codes_t;
 
-struct vmm_blob_t
+struct vmm_entry_t
 {
     uintptr_t base_address;
     size_t length;
     uint64_t flags;
     
-    struct vmm_blob_t *next_blob;
+    struct vmm_entry_t *next_blob;
 };
 
 struct vmm
 {
     union page_table_entry_t *page_table;
     
-    struct vmm_blob_t *used_list;
+    struct vmm_entry_t *used_list;
 };
 
 extern bool vmm_initialized;
@@ -62,8 +62,35 @@ vmm_error_codes_t vmm_init_kernel_vmm(struct vmm *kernel_vmm, union page_table_e
 */
 [[maybe_unused]] void vmm_dump(struct vmm vmm);
 
+/*!
+    @brief Allocate virtual memory.
+
+    Searches the VMMs used list for a gap larger then the requested size.
+    If a matching gap is found physical physical pages are allocated and mapped to this region.
+    Inserts a new VMM entry into the the used list.
+    Returns NULL if something goes wrong.
+
+    @param vmm Pointer to the VMM object for which memory shall be allocated.
+    @param length Size of the requested memory region in bytes.
+
+    @returns Base address of the allocated memory region if everything is ok, NULL otherwise.
+*/
 [[nodiscard("It will be quite hard to free memory if u don't remember its address.")]] void *vmm_alloc(struct vmm *vmm, size_t length);
 
-vmm_error_codes_t vmm_free(struct vmm *test, void *address);
+/*!
+    @brief Free virtual memory.
+
+    Searches the VMM objects used list for an entry with a base address matching the address.
+    If one is found:
+    - frees the regions physical pages
+    - unmaps the pages
+    Returns an error if no matching entry is found or either freeing physical memory or unmapping pages failed.
+
+    @param vmm VMM object for which the memory shall be freed.
+    @param address Base address of the memory region.
+
+    @returns VMM_OK if the memory was freed successfully, VMM_ERROR otherwise.
+*/
+vmm_error_codes_t vmm_free(struct vmm *vmm, void *address);
 
 #endif // VMM_H

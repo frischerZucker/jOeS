@@ -132,31 +132,91 @@ void kmain(void)
 
     struct vmm kernel_vmm = {};
     vmm_init_kernel_vmm(&kernel_vmm, kernel_page_table);
+    LOG_INFO("Kernel VMM initialized.");
     vmm_dump(kernel_vmm);
 
-    hcf();
+    uint8_t *test_arr = vmm_alloc(&kernel_vmm, 4096*1);
+    if (test_arr == NULL)
+    {
+        LOG_ERROR("VMM allocation failed :(");
+    }
+    LOG_INFO("test_arr allocated");
+    vmm_dump(kernel_vmm);
+
+    test_arr[0] = 'H';
+    test_arr[1] = 'A';
+    test_arr[2] = 'L';
+    test_arr[3] = 'L';
+    test_arr[4] = 'O';
+    test_arr[5] = 'L';
+    test_arr[6] = '!';
+    test_arr[9] = '\0';
+    printf("%s\n", test_arr);
+
+    uint8_t *test_arr2 = vmm_alloc(&kernel_vmm, 4096*2);
+    if (test_arr == NULL)
+    {
+        LOG_ERROR("VMM allocation failed :(");
+        hcf();
+    }
+    LOG_INFO("test_arr2 allocated");
+    vmm_dump(kernel_vmm);
+    
+    if (vmm_free(&kernel_vmm, test_arr2))
+    {
+        LOG_INFO("Freeing test_arr2 failed.");
+        hcf();
+    }
+    LOG_INFO("test_arr2 freed");
+    vmm_dump(kernel_vmm);
+    
+    if (vmm_free(&kernel_vmm, test_arr) != VMM_OK)
+    {
+        LOG_INFO("Freeing test_arr failed.");
+        hcf();
+    }
+    
+    LOG_INFO("test_arr freed");
+    vmm_dump(kernel_vmm);
+
+    test_arr = vmm_alloc(&kernel_vmm, 4096*3);
+    if (test_arr == NULL)
+    {
+        LOG_ERROR("VMM allocation failed :(");
+        hcf();
+    }
+    LOG_INFO("test_arr allocated");
+    vmm_dump(kernel_vmm);
+
+    test_arr[0] = '0';
+    test_arr[1] = '1';
+    test_arr[2] = '2';
+    test_arr[3] = '3';
+    test_arr[4] = '4';
+    test_arr[5] = '5';
+    test_arr[6] = '6';
+    test_arr[7] = '7';
+    test_arr[8] = '8';
+    test_arr[9] = '\0';
+    printf("%s\n", test_arr);
+
+
+    if (vmm_free(&kernel_vmm, NULL) != VMM_ERROR)
+    {
+        LOG_ERROR("Freeing NULL succeeded. This should have failed!?!?");
+        hcf();
+    }
 
     // Initialize the PIC and enable interrupts.
     pic_init(0x20, 0x28);
-    asm("sti");
     pit_init_channel(PIT_CHANNEL_0, 1000, PIT_SC_COUNTER_0 | PIT_MODE_SQUARE_WAVE);
     pic_enable_irq(0);
     
     ps2_init_controller();
 
-    LOG_INFO("Test mapping and unmapping a page...");
+    LOG_INFO("So far no erros. Seems to work i guess.");
 
-    if (paging_map_page(kernel_page_table, 0x7fb000, 0x7fb000, PAGE_SIZE_4KB, PAGING_FLAG_PRESENT | PAGING_FLAG_WRITABLE))
-    {
-        LOG_ERROR("Failed to map page");
-    }
-    
-    if (paging_unmap_page(kernel_page_table, 0x7fb000, PAGE_SIZE_4KB))
-    {
-        LOG_ERROR("Failed to unmap page");
-    }
-
-    LOG_INFO("No erros. Seems to work i guess.");
+    asm("sti");
 
     hcf();
 }

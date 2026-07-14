@@ -15,14 +15,14 @@ extern uint8_t _KERNEL_VMM_END[];
 
 bool vmm_initialized = false;
 
-static struct vmm_blob_t *vmm_blob_free_list = NULL;
+static struct vmm_entry_t *vmm_blob_free_list = NULL;
 
 /*!
     @brief Grab a VMM entry from the free list.
 
     @returns NULL if there are no free VMM entries left, otherwise a pointer to the VMM entry.
 */
-[[nodiscard]] static struct vmm_blob_t *vmm_alloc_blob()
+[[nodiscard]] static struct vmm_entry_t *vmm_alloc_blob()
 {
     if (vmm_blob_free_list == NULL)
     {
@@ -31,7 +31,7 @@ static struct vmm_blob_t *vmm_blob_free_list = NULL;
     }
 
     // Get the first free blob from the list.
-    struct vmm_blob_t *new_blob = vmm_blob_free_list;
+    struct vmm_entry_t *new_blob = vmm_blob_free_list;
     // Move its head to the next free blob.
     vmm_blob_free_list = vmm_blob_free_list->next_blob;
 
@@ -41,7 +41,7 @@ static struct vmm_blob_t *vmm_blob_free_list = NULL;
 /*!
     @brief Add a VMM entry to the free list.
 */
-[[maybe_unused]] static void vmm_free_blob(struct vmm_blob_t *blob)
+[[maybe_unused]] static void vmm_free_blob(struct vmm_entry_t *blob)
 {
     // Set the lists current head as the blobs next blob.
     blob->next_blob = vmm_blob_free_list;
@@ -61,9 +61,9 @@ static struct vmm_blob_t *vmm_blob_free_list = NULL;
 
     @returns VMM_OK if the entry was successfully inserted, otherwise VMM_ERROR.
 */
-static vmm_error_codes_t vmm_insert_blob(struct vmm *vmm, struct vmm_blob_t *blob)
+static vmm_error_codes_t vmm_insert_blob(struct vmm *vmm, struct vmm_entry_t *blob)
 {
-    struct vmm_blob_t *entry = vmm->used_list;
+    struct vmm_entry_t *entry = vmm->used_list;
     
     // Check if the new entry fits at the head of the list.
     if (blob->base_address < entry->base_address)
@@ -127,7 +127,7 @@ static vmm_error_codes_t vmm_insert_blob(struct vmm *vmm, struct vmm_blob_t *blo
 
     size_t num_entries = 0;
 
-    struct vmm_blob_t *entry = vmm.used_list;
+    struct vmm_entry_t *entry = vmm.used_list;
     while (entry != NULL)
     {
         LOG_INFO("VMM region @ %p, length=%d kB, flags=0x%x", entry->base_address, entry->length, entry->flags);
@@ -155,31 +155,44 @@ vmm_error_codes_t vmm_init_kernel_vmm(struct vmm *kernel_vmm, union page_table_e
 {
     size_t available_space = _KERNEL_VMM_END - _KERNEL_VMM_START;
 
-    LOG_INFO("\tvmm region start: %p\n\tvmm region end: %p\n\tavailable Space: %d B, enough for %d blobs", _KERNEL_VMM_START, _KERNEL_VMM_END, available_space, available_space / sizeof(struct vmm_blob_t));
+    LOG_INFO("\tvmm region start: %p\n\tvmm region end: %p\n\tavailable Space: %d B, enough for %d blobs", _KERNEL_VMM_START, _KERNEL_VMM_END, available_space, available_space / sizeof(struct vmm_entry_t));
 
     // Populate the free list with all blob-structs in the reserved region
-    vmm_blob_free_list = (struct vmm_blob_t *) _KERNEL_VMM_START;
-    for (size_t idx = 1; idx < available_space / sizeof(struct vmm_blob_t); idx++)
+    vmm_blob_free_list = (struct vmm_entry_t *) _KERNEL_VMM_START;
+    for (size_t idx = 1; idx < available_space / sizeof(struct vmm_entry_t); idx++)
     {
         vmm_blob_free_list[idx - 1].next_blob = &vmm_blob_free_list[idx];
     }
 
     kernel_vmm->page_table = kernel_page_table;
 
-    // Add the first entry for the kernels memory.
+    // Add the first "NULL" entry. -> This stops the VMM to allocate something at NULL.
     kernel_vmm->used_list = vmm_alloc_blob();
     if (kernel_vmm->used_list == NULL)
     {
-        LOG_ERROR("Failed to allocate VMM region.");
+        LOG_ERROR("Failed to allocate NULL region.");
         return VMM_ERROR;
     }
-    kernel_vmm->used_list->base_address = (uintptr_t)_KERNEL_START;
-    kernel_vmm->used_list->length = (size_t)(_KERNEL_END - _KERNEL_START);
+    kernel_vmm->used_list->base_address = 0;
+    kernel_vmm->used_list->length = 0x1000;
     kernel_vmm->used_list->next_blob = NULL;
     kernel_vmm->used_list->flags = 0;
 
+    // Add the first entry for the kernels memory.
+    struct vmm_entry_t *kernel_region = vmm_alloc_blob();
+    if (kernel_region == NULL)
+    {
+        LOG_ERROR("Failed to allocate kernel region.");
+        return VMM_ERROR;
+    }
+    kernel_region->base_address = (uintptr_t)_KERNEL_START;
+    kernel_region->length = (size_t)(_KERNEL_END - _KERNEL_START);
+    kernel_region->next_blob = NULL;
+    kernel_region->flags = 0;
+    kernel_vmm->used_list->next_blob = kernel_region;
+
     // Memory used to store the PMMs metadata.
-    struct vmm_blob_t *pmm_region = vmm_alloc_blob();
+    struct vmm_entry_t *pmm_region = vmm_alloc_blob();
     if (pmm_region == NULL)
     {
         LOG_ERROR("Failed to allocate PMM metadata region.");
@@ -203,7 +216,7 @@ vmm_error_codes_t vmm_init_kernel_vmm(struct vmm *kernel_vmm, union page_table_e
         else
         {
             LOG_DEBUG("Page table region @ %p (%d kB)", region_start, region_len / 1024);
-            struct vmm_blob_t *paging_region = vmm_alloc_blob();
+            struct vmm_entry_t *paging_region = vmm_alloc_blob();
             if (paging_region == NULL)
             {
                 LOG_ERROR("Failed to allocate page table region.");
@@ -220,7 +233,7 @@ vmm_error_codes_t vmm_init_kernel_vmm(struct vmm *kernel_vmm, union page_table_e
         }
     }
     LOG_DEBUG("Page table region @ %p (%d kB)", region_start, region_len / 1024);
-    struct vmm_blob_t *paging_region = vmm_alloc_blob();
+    struct vmm_entry_t *paging_region = vmm_alloc_blob();
     if (paging_region == NULL)
     {
         LOG_ERROR("Failed to allocate page table region.");
@@ -237,9 +250,143 @@ vmm_error_codes_t vmm_init_kernel_vmm(struct vmm *kernel_vmm, union page_table_e
     return VMM_OK;
 }
 
+/*!
+    @brief Allocate virtual memory.
+
+    Searches the VMMs used list for a gap larger then the requested size.
+    If a matching gap is found physical physical pages are allocated and mapped to this region.
+    Inserts a new VMM entry into the the used list.
+    Returns NULL if something goes wrong.
+
+    @param vmm Pointer to the VMM object for which memory shall be allocated.
+    @param length Size of the requested memory region in bytes.
+
+    @returns Base address of the allocated memory region if everything is ok, NULL otherwise.
+*/
 void *vmm_alloc(struct vmm *vmm, size_t length)
 {
     void *address = NULL;
 
+    // Search for a gap in virtual memory that fits an entry of the requested size.
+    struct vmm_entry_t *last_entry = vmm->used_list;
+    struct vmm_entry_t *current_entry = vmm->used_list->next_blob;
+    while (current_entry != NULL)
+    {
+        if (last_entry->base_address + last_entry->length  + length < current_entry->base_address)
+        {
+            LOG_DEBUG("Found enough free memory from %p to %p", last_entry->base_address + last_entry->length, current_entry->base_address);
+            address = (void *)last_entry->base_address + last_entry->length;
+            break;
+        }
+
+        last_entry = current_entry;
+        current_entry = current_entry->next_blob;
+    }
+
+    if (address == NULL)
+    {
+        LOG_ERROR("Unable to find a large enough free memory region.");
+        return NULL;
+    }
+
+    size_t required_pages = (length + 4095) / 4096;
+
+    // Create a new VMM entry.
+    struct vmm_entry_t *new_entry = vmm_alloc_blob();
+    new_entry->base_address = (uintptr_t)address;
+    new_entry->length = required_pages * 4096; // Use the length that was actually allocated (rounded up to the next page).
+    new_entry->flags = 0;
+    new_entry->next_blob = current_entry;
+    if (last_entry == NULL)
+    {
+        vmm->used_list = new_entry;
+    }
+    else
+    {
+        last_entry->next_blob = new_entry;
+    }
+
+    // Actually allocate the physical memory that is required.
+    void *phys = NULL;
+    for (size_t idx = 0; idx < required_pages; idx++)
+    {
+        phys = pmm_alloc();
+        if (phys == NULL)
+        {
+            LOG_ERROR("Failed to allocate physical memory.");
+            return NULL;
+        }
+
+        LOG_DEBUG("[%d/%d] phys @ %p", idx + 1, required_pages, phys);
+
+        if (paging_map_page(vmm->page_table, (uintptr_t)phys, (uintptr_t)address + 0x1000 * idx, PAGE_SIZE_4KB, PAGING_FLAG_PRESENT | PAGING_FLAG_WRITABLE) != PAGING_OK)
+        {
+            LOG_ERROR("Failed to map page. phys=%p, virt=%p", phys, address + 0x1000 * idx);
+            return NULL;
+        }
+    }
+
     return address;
+}
+
+/*!
+    @brief Free virtual memory.
+
+    Searches the VMM objects used list for an entry with a base address matching the address.
+    If one is found:
+    - frees the regions physical pages
+    - unmaps the pages
+    Returns an error if no matching entry is found or either freeing physical memory or unmapping pages failed.
+
+    @param vmm VMM object for which the memory shall be freed.
+    @param address Base address of the memory region.
+
+    @returns VMM_OK if the memory was freed successfully, VMM_ERROR otherwise.
+*/
+vmm_error_codes_t vmm_free(struct vmm *vmm, void *address)
+{
+    // Search for a VMM entry matching the address.
+    struct vmm_entry_t *last_entry = vmm->used_list;
+    struct vmm_entry_t *current_entry = vmm->used_list->next_blob;
+    while (current_entry != NULL)
+    {
+        if(current_entry->base_address == (uintptr_t)address)
+        {
+            LOG_DEBUG("Found entry with requested address %p with lenght=%p", address, current_entry->length);
+            break;
+        }
+        
+        last_entry = current_entry;
+        current_entry = current_entry->next_blob;
+    }
+
+    if (current_entry == NULL)
+    {
+        LOG_ERROR("Could not find a VMM entry matching the address %p.", address);
+        return VMM_ERROR;
+    }
+
+    // Free the physical memory and unmap its pages.
+    size_t num_pages = current_entry->length / 4096;
+    for (size_t idx = 0; idx < num_pages; idx++)
+    {
+        LOG_DEBUG("Unmapping page %d of %d", idx+1, num_pages);
+        if (pmm_free((void *)paging_resolve_virtual_address(vmm->page_table, (uintptr_t)address + idx * 0x1000)) != PMM_OK)
+        {
+            LOG_ERROR("Failed to free physical memory for %p (phys=%p)", address + idx * 0x1000, paging_resolve_virtual_address(vmm->page_table, (uintptr_t)address + idx * 0x1000));
+            return VMM_ERROR;
+        }
+
+        if (paging_unmap_page(vmm->page_table, (uintptr_t)address + idx * 0x1000, PAGE_SIZE_4KB) != PAGING_OK)
+        {
+            LOG_ERROR("Failed to unmap page for %p.", current_entry->base_address + idx * 0x1000);
+            return VMM_ERROR;
+        }        
+    }
+
+    // Remove the VMM entry from the list.
+    last_entry->next_blob = current_entry->next_blob;
+    vmm_free_blob(current_entry);
+
+    return VMM_OK;
 }
