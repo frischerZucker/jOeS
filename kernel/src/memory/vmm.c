@@ -267,6 +267,10 @@ void *vmm_alloc(struct vmm *vmm, size_t length)
 {
     void *address = NULL;
 
+    // The allocator works with whole 4kB pages. -> Length has to be rounded up to the next page.
+    size_t required_pages = (length + 4095) / 4096;
+    length = required_pages * 0x1000;
+
     // Search for a gap in virtual memory that fits an entry of the requested size.
     struct vmm_entry_t *last_entry = vmm->used_list;
     struct vmm_entry_t *current_entry = vmm->used_list->next_blob;
@@ -287,14 +291,12 @@ void *vmm_alloc(struct vmm *vmm, size_t length)
     {
         LOG_ERROR("Unable to find a large enough free memory region.");
         return NULL;
-    }
-
-    size_t required_pages = (length + 4095) / 4096;
+    }  
 
     // Create a new VMM entry.
     struct vmm_entry_t *new_entry = vmm_alloc_blob();
     new_entry->base_address = (uintptr_t)address;
-    new_entry->length = required_pages * 4096; // Use the length that was actually allocated (rounded up to the next page).
+    new_entry->length = length; // Use the length that was actually allocated (rounded up to the next page).
     new_entry->flags = 0;
     new_entry->next_blob = current_entry;
     if (last_entry == NULL)
