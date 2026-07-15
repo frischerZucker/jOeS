@@ -15,38 +15,38 @@ extern uint8_t _KERNEL_VMM_END[];
 
 bool vmm_initialized = false;
 
-static struct vmm_entry_t *vmm_blob_free_list = NULL;
+static struct vmm_entry_t *vmm_entry_free_list = NULL;
 
 /*!
     @brief Grab a VMM entry from the free list.
 
     @returns NULL if there are no free VMM entries left, otherwise a pointer to the VMM entry.
 */
-[[nodiscard]] static struct vmm_entry_t *vmm_alloc_blob()
+[[nodiscard]] static struct vmm_entry_t *vmm_alloc_entry()
 {
-    if (vmm_blob_free_list == NULL)
+    if (vmm_entry_free_list == NULL)
     {
-        LOG_ERROR("No free VMM blobs!");
+        LOG_ERROR("No free VMM entrys!");
         return NULL;
     }
 
-    // Get the first free blob from the list.
-    struct vmm_entry_t *new_blob = vmm_blob_free_list;
-    // Move its head to the next free blob.
-    vmm_blob_free_list = vmm_blob_free_list->next_blob;
+    // Get the first free entry from the list.
+    struct vmm_entry_t *new_entry = vmm_entry_free_list;
+    // Move its head to the next free entry.
+    vmm_entry_free_list = vmm_entry_free_list->next_entry;
 
-    return new_blob;
+    return new_entry;
 }
 
 /*!
     @brief Add a VMM entry to the free list.
 */
-[[maybe_unused]] static void vmm_free_blob(struct vmm_entry_t *blob)
+[[maybe_unused]] static void vmm_free_entry(struct vmm_entry_t *entry)
 {
-    // Set the lists current head as the blobs next blob.
-    blob->next_blob = vmm_blob_free_list;
-    // Insert the blob at the lists head.
-    vmm_blob_free_list = blob;
+    // Set the lists current head as the entrys next entry.
+    entry->next_entry = vmm_entry_free_list;
+    // Insert the entry at the lists head.
+    vmm_entry_free_list = entry;
 }
 
 /*!
@@ -57,61 +57,90 @@ static struct vmm_entry_t *vmm_blob_free_list = NULL;
     If a matching spot is found, the entry is inserted into the list.
 
     @param vmm Pointer to the VMM object into thats used list the entry shall be inserted.
-    @param blob Pointer to the VMM entry to insert.
+    @param entry Pointer to the VMM entry to insert.
 
     @returns VMM_OK if the entry was successfully inserted, otherwise VMM_ERROR.
 */
-static vmm_error_codes_t vmm_insert_blob(struct vmm *vmm, struct vmm_entry_t *blob)
+static vmm_error_codes_t vmm_insert_entry(struct vmm *vmm, struct vmm_entry_t *new_entry)
 {
-    struct vmm_entry_t *entry = vmm->used_list;
+    struct vmm_entry_t *current_entry = vmm->used_list;
     
     // Check if the new entry fits at the head of the list.
-    if (blob->base_address < entry->base_address)
+    if (new_entry->base_address < current_entry->base_address)
     {
-        if (blob->base_address + blob->length > entry->base_address)
+        if (new_entry->base_address + new_entry->length > current_entry->base_address)
         {
             LOG_ERROR("Region does not fit into the virtual memory space. It overlaps with an already existing region.");
             return VMM_ERROR;
         }
 
         // Insert the new entry as head of the used list.
-        blob->next_blob = entry;
-        vmm->used_list = blob;
+        new_entry->next_entry = current_entry;
+        vmm->used_list = new_entry;
 
         return VMM_OK;
     }
 
     // Check if the new entry fits between an two neighbours in the used list.
-    for (; entry->next_blob != NULL; entry = entry->next_blob)
+    for (; current_entry->next_entry != NULL; current_entry = current_entry->next_entry)
     {
         // The current entry has to end before the new entrys base address.
-        if (entry->base_address + entry->length > blob->base_address)
+        if (current_entry->base_address + current_entry->length > new_entry->base_address)
         {
             continue;
         }
 
         // The next entrys base address has to be larger then the end of the new entrys region.
-        if (entry->next_blob->base_address < blob->base_address + blob->length)
+        if (current_entry->next_entry->base_address < new_entry->base_address + new_entry->length)
         {
             continue;
         }
 
-        // Both criteria are fulfilled -> The blob fits into the gap between the current and the next entry. Therefore insert it into the list.
-        blob->next_blob = entry->next_blob;
-        entry->next_blob = blob;
+        // Both criteria are fulfilled -> The entry fits into the gap between the current and the next entry. Therefore insert it into the list.
+        new_entry->next_entry = current_entry->next_entry;
+        current_entry->next_entry = new_entry;
         return VMM_OK;
     }
 
     // The new entry should be behind the lists tail.
-    if (entry->base_address + entry->length <= blob->base_address)
+    if (current_entry->base_address + current_entry->length <= new_entry->base_address)
     {
-        blob->next_blob = NULL;
-        entry->next_blob = blob;
+        new_entry->next_entry = NULL;
+        current_entry->next_entry = new_entry;
         return VMM_OK;
     }
     
     LOG_ERROR("Found no gap for the new entry.");
     return VMM_ERROR;
+}
+
+/*!
+    @brief Convert VMM flags to paging flags.
+
+    @param vmm_flags 64 bit integer with VMM flags.
+
+    @returns 64 bit integer with paging flags.
+*/
+static uint64_t get_paging_flags_from_vmm_flags(uint64_t vmm_flags)
+{
+    uint64_t paging_flags = 0;
+
+    if (vmm_flags & VMM_FLAG_WRITABLE)
+    {
+        paging_flags = paging_flags | PAGING_FLAG_WRITABLE;
+    }
+
+    if (vmm_flags & VMM_FLAG_USER_LEVEL)
+    {
+        paging_flags = paging_flags | PAGING_FLAG_USER_LEVEL;
+    }
+
+    if ((vmm_flags & VMM_FLAG_ENABLE_EXECUTION) == 0)
+    {
+        paging_flags = paging_flags | PAGING_FLAG_DISABLE_EXECUTION;
+    }
+
+    return paging_flags;
 }
 
 /*!
@@ -133,7 +162,7 @@ static vmm_error_codes_t vmm_insert_blob(struct vmm *vmm, struct vmm_entry_t *bl
         LOG_INFO("VMM region @ %p, length=%d kB, flags=0x%x", entry->base_address, entry->length, entry->flags);
         num_entries = num_entries + 1;
 
-        entry = entry->next_blob;
+        entry = entry->next_entry;
     }
     
     LOG_INFO("The VMM object has %d entries.", num_entries);
@@ -155,19 +184,19 @@ vmm_error_codes_t vmm_init_kernel_vmm(struct vmm *kernel_vmm, union page_table_e
 {
     size_t available_space = _KERNEL_VMM_END - _KERNEL_VMM_START;
 
-    LOG_INFO("\tvmm region start: %p\n\tvmm region end: %p\n\tavailable Space: %d B, enough for %d blobs", _KERNEL_VMM_START, _KERNEL_VMM_END, available_space, available_space / sizeof(struct vmm_entry_t));
+    LOG_INFO("\tvmm region start: %p\n\tvmm region end: %p\n\tavailable Space: %d B, enough for %d entrys", _KERNEL_VMM_START, _KERNEL_VMM_END, available_space, available_space / sizeof(struct vmm_entry_t));
 
-    // Populate the free list with all blob-structs in the reserved region
-    vmm_blob_free_list = (struct vmm_entry_t *) _KERNEL_VMM_START;
+    // Populate the free list with all entry-structs in the reserved region
+    vmm_entry_free_list = (struct vmm_entry_t *) _KERNEL_VMM_START;
     for (size_t idx = 1; idx < available_space / sizeof(struct vmm_entry_t); idx++)
     {
-        vmm_blob_free_list[idx - 1].next_blob = &vmm_blob_free_list[idx];
+        vmm_entry_free_list[idx - 1].next_entry = &vmm_entry_free_list[idx];
     }
 
     kernel_vmm->page_table = kernel_page_table;
 
     // Add the first "NULL" entry. -> This stops the VMM to allocate something at NULL.
-    kernel_vmm->used_list = vmm_alloc_blob();
+    kernel_vmm->used_list = vmm_alloc_entry();
     if (kernel_vmm->used_list == NULL)
     {
         LOG_ERROR("Failed to allocate NULL region.");
@@ -175,11 +204,11 @@ vmm_error_codes_t vmm_init_kernel_vmm(struct vmm *kernel_vmm, union page_table_e
     }
     kernel_vmm->used_list->base_address = 0;
     kernel_vmm->used_list->length = 0x1000;
-    kernel_vmm->used_list->next_blob = NULL;
+    kernel_vmm->used_list->next_entry = NULL;
     kernel_vmm->used_list->flags = 0;
 
     // Add the first entry for the kernels memory.
-    struct vmm_entry_t *kernel_region = vmm_alloc_blob();
+    struct vmm_entry_t *kernel_region = vmm_alloc_entry();
     if (kernel_region == NULL)
     {
         LOG_ERROR("Failed to allocate kernel region.");
@@ -187,12 +216,12 @@ vmm_error_codes_t vmm_init_kernel_vmm(struct vmm *kernel_vmm, union page_table_e
     }
     kernel_region->base_address = (uintptr_t)_KERNEL_START;
     kernel_region->length = (size_t)(_KERNEL_END - _KERNEL_START);
-    kernel_region->next_blob = NULL;
-    kernel_region->flags = 0;
-    kernel_vmm->used_list->next_blob = kernel_region;
+    kernel_region->next_entry = NULL;
+    kernel_region->flags = VMM_FLAG_WRITABLE | VMM_FLAG_ENABLE_EXECUTION;
+    kernel_vmm->used_list->next_entry = kernel_region;
 
     // Memory used to store the PMMs metadata.
-    struct vmm_entry_t *pmm_region = vmm_alloc_blob();
+    struct vmm_entry_t *pmm_region = vmm_alloc_entry();
     if (pmm_region == NULL)
     {
         LOG_ERROR("Failed to allocate PMM metadata region.");
@@ -200,9 +229,9 @@ vmm_error_codes_t vmm_init_kernel_vmm(struct vmm *kernel_vmm, union page_table_e
     }
     pmm_region->base_address = (uintptr_t)_KERNEL_PMM_START;
     pmm_region->length = (size_t)(_KERNEL_PMM_END - _KERNEL_PMM_START);
-    pmm_region->next_blob = NULL;
-    pmm_region->flags = 0;
-    vmm_insert_blob(kernel_vmm, pmm_region);
+    pmm_region->next_entry = NULL;
+    pmm_region->flags = VMM_FLAG_WRITABLE;
+    vmm_insert_entry(kernel_vmm, pmm_region);
 
     // Add entries for the memory used for page tables.
     uintptr_t region_start = (uintptr_t)paging_used_pages_list[0];
@@ -216,7 +245,7 @@ vmm_error_codes_t vmm_init_kernel_vmm(struct vmm *kernel_vmm, union page_table_e
         else
         {
             LOG_DEBUG("Page table region @ %p (%d kB)", region_start, region_len / 1024);
-            struct vmm_entry_t *paging_region = vmm_alloc_blob();
+            struct vmm_entry_t *paging_region = vmm_alloc_entry();
             if (paging_region == NULL)
             {
                 LOG_ERROR("Failed to allocate page table region.");
@@ -224,16 +253,16 @@ vmm_error_codes_t vmm_init_kernel_vmm(struct vmm *kernel_vmm, union page_table_e
             }
             paging_region->base_address = region_start;
             paging_region->length = region_len;
-            paging_region->next_blob = NULL;
-            paging_region->flags = 0;
-            vmm_insert_blob(kernel_vmm, paging_region);
+            paging_region->next_entry = NULL;
+            paging_region->flags = VMM_FLAG_WRITABLE;
+            vmm_insert_entry(kernel_vmm, paging_region);
 
             region_start = (uintptr_t)paging_used_pages_list[idx];
             region_len = 0x1000;
         }
     }
     LOG_DEBUG("Page table region @ %p (%d kB)", region_start, region_len / 1024);
-    struct vmm_entry_t *paging_region = vmm_alloc_blob();
+    struct vmm_entry_t *paging_region = vmm_alloc_entry();
     if (paging_region == NULL)
     {
         LOG_ERROR("Failed to allocate page table region.");
@@ -241,9 +270,9 @@ vmm_error_codes_t vmm_init_kernel_vmm(struct vmm *kernel_vmm, union page_table_e
     }
     paging_region->base_address = region_start;
     paging_region->length = region_len;
-    paging_region->next_blob = NULL;
-    paging_region->flags = 0;
-    vmm_insert_blob(kernel_vmm, paging_region);
+    paging_region->next_entry = NULL;
+    paging_region->flags = VMM_FLAG_WRITABLE;
+    vmm_insert_entry(kernel_vmm, paging_region);
 
     vmm_initialized = true;
 
@@ -263,7 +292,7 @@ vmm_error_codes_t vmm_init_kernel_vmm(struct vmm *kernel_vmm, union page_table_e
 
     @returns Base address of the allocated memory region if everything is ok, NULL otherwise.
 */
-void *vmm_alloc(struct vmm *vmm, size_t length)
+void *vmm_alloc(struct vmm *vmm, size_t length, uint64_t flags)
 {
     void *address = NULL;
 
@@ -273,7 +302,7 @@ void *vmm_alloc(struct vmm *vmm, size_t length)
 
     // Search for a gap in virtual memory that fits an entry of the requested size.
     struct vmm_entry_t *last_entry = vmm->used_list;
-    struct vmm_entry_t *current_entry = vmm->used_list->next_blob;
+    struct vmm_entry_t *current_entry = vmm->used_list->next_entry;
     while (current_entry != NULL)
     {
         if (last_entry->base_address + last_entry->length  + length < current_entry->base_address)
@@ -284,7 +313,7 @@ void *vmm_alloc(struct vmm *vmm, size_t length)
         }
 
         last_entry = current_entry;
-        current_entry = current_entry->next_blob;
+        current_entry = current_entry->next_entry;
     }
 
     if (address == NULL)
@@ -294,34 +323,43 @@ void *vmm_alloc(struct vmm *vmm, size_t length)
     }  
 
     // Create a new VMM entry.
-    struct vmm_entry_t *new_entry = vmm_alloc_blob();
+    struct vmm_entry_t *new_entry = vmm_alloc_entry();
     new_entry->base_address = (uintptr_t)address;
     new_entry->length = length; // Use the length that was actually allocated (rounded up to the next page).
-    new_entry->flags = 0;
-    new_entry->next_blob = current_entry;
+    new_entry->flags = flags;
+    new_entry->next_entry = current_entry;
     if (last_entry == NULL)
     {
         vmm->used_list = new_entry;
     }
     else
     {
-        last_entry->next_blob = new_entry;
+        last_entry->next_entry = new_entry;
     }
+
+    uint64_t paging_flags = get_paging_flags_from_vmm_flags(flags) | PAGING_FLAG_PRESENT;
 
     // Actually allocate the physical memory that is required.
     void *phys = NULL;
     for (size_t idx = 0; idx < required_pages; idx++)
-    {
-        phys = pmm_alloc();
-        if (phys == NULL)
+    {   
+        if (flags & VMM_FLAG_MMIO)
         {
-            LOG_ERROR("Failed to allocate physical memory.");
-            return NULL;
+            phys = address + idx * 0x1000;
+        }
+        else
+        {
+            phys = pmm_alloc();
+            if (phys == NULL)
+            {
+                LOG_ERROR("Failed to allocate physical memory.");
+                return NULL;
+            }
         }
 
         LOG_DEBUG("[%d/%d] phys @ %p", idx + 1, required_pages, phys);
 
-        if (paging_map_page(vmm->page_table, (uintptr_t)phys, (uintptr_t)address + 0x1000 * idx, PAGE_SIZE_4KB, PAGING_FLAG_PRESENT | PAGING_FLAG_WRITABLE) != PAGING_OK)
+        if (paging_map_page(vmm->page_table, (uintptr_t)phys, (uintptr_t)address + 0x1000 * idx, PAGE_SIZE_4KB, paging_flags) != PAGING_OK)
         {
             LOG_ERROR("Failed to map page. phys=%p, virt=%p", phys, address + 0x1000 * idx);
             return NULL;
@@ -349,7 +387,7 @@ vmm_error_codes_t vmm_free(struct vmm *vmm, void *address)
 {
     // Search for a VMM entry matching the address.
     struct vmm_entry_t *last_entry = vmm->used_list;
-    struct vmm_entry_t *current_entry = vmm->used_list->next_blob;
+    struct vmm_entry_t *current_entry = vmm->used_list->next_entry;
     while (current_entry != NULL)
     {
         if(current_entry->base_address == (uintptr_t)address)
@@ -359,7 +397,7 @@ vmm_error_codes_t vmm_free(struct vmm *vmm, void *address)
         }
         
         last_entry = current_entry;
-        current_entry = current_entry->next_blob;
+        current_entry = current_entry->next_entry;
     }
 
     if (current_entry == NULL)
@@ -387,8 +425,8 @@ vmm_error_codes_t vmm_free(struct vmm *vmm, void *address)
     }
 
     // Remove the VMM entry from the list.
-    last_entry->next_blob = current_entry->next_blob;
-    vmm_free_blob(current_entry);
+    last_entry->next_entry = current_entry->next_entry;
+    vmm_free_entry(current_entry);
 
     return VMM_OK;
 }

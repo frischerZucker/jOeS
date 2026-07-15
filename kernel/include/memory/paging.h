@@ -30,27 +30,14 @@ typedef enum
     PAGE_SIZE_1GB
 } page_size_t;
 
-#define PAGING_FLAG_PRESENT (1 << 0)
-#define PAGING_FLAG_WRITABLE (1 << 1)
-#define PAGING_FLAG_USER_LEVEL (1 << 2)
-#define PAGING_FLAG_PWT (1 << 3)
-#define PAGING_FLAG_PCD (1 << 4)
-#define PAGING_FLAG_PAGE_SIZE (1 << 7)
-#define PAGING_FLAG_GLOBAL (1 << 8)
-#define PAGING_FLAG_DISABLE_EXECUTION (1 << 63)
-
-struct paging_flags_t
-{
-    bool writable;
-    bool user_level;
-    bool page_write_through;
-    bool page_cache_disable;
-    bool page_attribute_table;
-    bool page_size;
-    bool global;
-    bool disable_execution;
-    uint8_t protection_key;
-};
+#define PAGING_FLAG_PRESENT (1ULL << 0)
+#define PAGING_FLAG_WRITABLE (1ULL << 1)
+#define PAGING_FLAG_USER_LEVEL (1ULL << 2)
+#define PAGING_FLAG_PWT (1ULL << 3)
+#define PAGING_FLAG_PCD (1ULL << 4)
+#define PAGING_FLAG_PAGE_SIZE (1ULL << 7)
+#define PAGING_FLAG_GLOBAL (1ULL << 8)
+#define PAGING_FLAG_DISABLE_EXECUTION (1ULL << 63)
 
 /*!
     @brief Page table levels.

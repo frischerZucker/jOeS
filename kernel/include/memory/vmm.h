@@ -15,6 +15,12 @@
 
 #include "paging.h"
 
+#define VMM_FLAG_NONE 0
+#define VMM_FLAG_WRITABLE (1ULL << 0)
+#define VMM_FLAG_ENABLE_EXECUTION (1ULL << 1)
+#define VMM_FLAG_USER_LEVEL (1ULL << 2)
+#define VMM_FLAG_MMIO (1ULL << 3)
+
 typedef enum
 {
     VMM_OK,
@@ -27,7 +33,7 @@ struct vmm_entry_t
     size_t length;
     uint64_t flags;
     
-    struct vmm_entry_t *next_blob;
+    struct vmm_entry_t *next_entry;
 };
 
 struct vmm
@@ -75,7 +81,7 @@ vmm_error_codes_t vmm_init_kernel_vmm(struct vmm *kernel_vmm, union page_table_e
 
     @returns Base address of the allocated memory region if everything is ok, NULL otherwise.
 */
-[[nodiscard("It will be quite hard to free memory if u don't remember its address.")]] void *vmm_alloc(struct vmm *vmm, size_t length);
+[[nodiscard("It will be quite hard to free memory if u don't remember its address.")]] void *vmm_alloc(struct vmm *vmm, size_t length, uint64_t flags);
 
 /*!
     @brief Free virtual memory.

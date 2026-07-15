@@ -135,7 +135,7 @@ void kmain(void)
     LOG_INFO("Kernel VMM initialized.");
     vmm_dump(kernel_vmm);
 
-    uint8_t *test_arr = vmm_alloc(&kernel_vmm, 4096*1);
+    uint8_t *test_arr = vmm_alloc(&kernel_vmm, 4096*1, VMM_FLAG_WRITABLE);
     if (test_arr == NULL)
     {
         LOG_ERROR("VMM allocation failed :(");
@@ -153,7 +153,7 @@ void kmain(void)
     test_arr[9] = '\0';
     printf("%s\n", test_arr);
 
-    uint8_t *test_arr2 = vmm_alloc(&kernel_vmm, 4096*2);
+    uint8_t *test_arr2 = vmm_alloc(&kernel_vmm, 4096*2, VMM_FLAG_WRITABLE);
     if (test_arr == NULL)
     {
         LOG_ERROR("VMM allocation failed :(");
@@ -179,7 +179,7 @@ void kmain(void)
     LOG_INFO("test_arr freed");
     vmm_dump(kernel_vmm);
 
-    test_arr = vmm_alloc(&kernel_vmm, 4096*3);
+    test_arr = vmm_alloc(&kernel_vmm, 4096*3, VMM_FLAG_WRITABLE);
     if (test_arr == NULL)
     {
         LOG_ERROR("VMM allocation failed :(");
