@@ -64,22 +64,6 @@ static struct vmm_entry_t *vmm_entry_free_list = NULL;
 static vmm_error_codes_t vmm_insert_entry(struct vmm *vmm, struct vmm_entry_t *new_entry)
 {
     struct vmm_entry_t *current_entry = vmm->used_list;
-    
-    // Check if the new entry fits at the head of the list.
-    if (new_entry->base_address < current_entry->base_address)
-    {
-        if (new_entry->base_address + new_entry->length > current_entry->base_address)
-        {
-            LOG_ERROR("Region does not fit into the virtual memory space. It overlaps with an already existing region.");
-            return VMM_ERROR;
-        }
-
-        // Insert the new entry as head of the used list.
-        new_entry->next_entry = current_entry;
-        vmm->used_list = new_entry;
-
-        return VMM_OK;
-    }
 
     // Check if the new entry fits between an two neighbours in the used list.
     for (; current_entry->next_entry != NULL; current_entry = current_entry->next_entry)
