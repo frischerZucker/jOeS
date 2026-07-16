@@ -74,14 +74,17 @@ vmm_error_codes_t vmm_init_kernel_vmm(struct vmm *kernel_vmm, union page_table_e
     Searches the VMMs used list for a gap larger then the requested size.
     If a matching gap is found physical physical pages are allocated and mapped to this region.
     Inserts a new VMM entry into the the used list.
+    For MMIO allocations an entry with the desired address is created and inserted into the list.
     Returns NULL if something goes wrong.
 
     @param vmm Pointer to the VMM object for which memory shall be allocated.
     @param length Size of the requested memory region in bytes.
+    @param flags Flags to specify the regions capabilities.
+    @param arg Additional argument. For now its only used to provide an address for MMIO allocations.
 
     @returns Base address of the allocated memory region if everything is ok, NULL otherwise.
 */
-[[nodiscard("It will be quite hard to free memory if u don't remember its address.")]] void *vmm_alloc(struct vmm *vmm, size_t length, uint64_t flags);
+[[nodiscard("It will be quite hard to free memory if u don't remember its address.")]] void *vmm_alloc(struct vmm *vmm, size_t length, uint64_t flags, void *arg);
 
 /*!
     @brief Free virtual memory.

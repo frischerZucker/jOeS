@@ -285,14 +285,17 @@ vmm_error_codes_t vmm_init_kernel_vmm(struct vmm *kernel_vmm, union page_table_e
     Searches the VMMs used list for a gap larger then the requested size.
     If a matching gap is found physical physical pages are allocated and mapped to this region.
     Inserts a new VMM entry into the the used list.
+    For MMIO allocations an entry with the desired address is created and inserted into the list.
     Returns NULL if something goes wrong.
 
     @param vmm Pointer to the VMM object for which memory shall be allocated.
     @param length Size of the requested memory region in bytes.
+    @param flags Flags to specify the regions capabilities.
+    @param arg Additional argument. For now its only used to provide an address for MMIO allocations.
 
     @returns Base address of the allocated memory region if everything is ok, NULL otherwise.
 */
-void *vmm_alloc(struct vmm *vmm, size_t length, uint64_t flags)
+void *vmm_alloc(struct vmm *vmm, size_t length, uint64_t flags, void *arg)
 {
     void *address = NULL;
 
@@ -300,41 +303,62 @@ void *vmm_alloc(struct vmm *vmm, size_t length, uint64_t flags)
     size_t required_pages = (length + 4095) / 4096;
     length = required_pages * 0x1000;
 
-    // Search for a gap in virtual memory that fits an entry of the requested size.
-    struct vmm_entry_t *last_entry = vmm->used_list;
-    struct vmm_entry_t *current_entry = vmm->used_list->next_entry;
-    while (current_entry != NULL)
+    if ((flags & VMM_FLAG_MMIO) != 0)
     {
-        if (last_entry->base_address + last_entry->length  + length < current_entry->base_address)
+        // Identity map a region at a specific address. -> Just insert a matching VMM entry into the list. 
+
+        struct vmm_entry_t *new_entry = vmm_alloc_entry();
+        new_entry->base_address = (uintptr_t)arg;
+        new_entry->length = length; // Use the length that was actually allocated (rounded up to the next page).
+        new_entry->flags = flags;
+
+        if (vmm_insert_entry(vmm, new_entry) != VMM_OK)
         {
-            LOG_DEBUG("Found enough free memory from %p to %p", last_entry->base_address + last_entry->length, current_entry->base_address);
-            address = (void *)last_entry->base_address + last_entry->length;
-            break;
+            LOG_ERROR("Failed to insert entry into used list.");
+            return NULL;
         }
 
-        last_entry = current_entry;
-        current_entry = current_entry->next_entry;
-    }
-
-    if (address == NULL)
-    {
-        LOG_ERROR("Unable to find a large enough free memory region.");
-        return NULL;
-    }  
-
-    // Create a new VMM entry.
-    struct vmm_entry_t *new_entry = vmm_alloc_entry();
-    new_entry->base_address = (uintptr_t)address;
-    new_entry->length = length; // Use the length that was actually allocated (rounded up to the next page).
-    new_entry->flags = flags;
-    new_entry->next_entry = current_entry;
-    if (last_entry == NULL)
-    {
-        vmm->used_list = new_entry;
+        address = arg;
     }
     else
     {
-        last_entry->next_entry = new_entry;
+        // Just allocate some memory somewhere in virtual memory. -> Search for a gap in virtual memory that fits an entry of the requested size.
+
+        struct vmm_entry_t *last_entry = vmm->used_list;
+        struct vmm_entry_t *current_entry = vmm->used_list->next_entry;
+        while (current_entry != NULL)
+        {
+            if (last_entry->base_address + last_entry->length  + length < current_entry->base_address)
+            {
+                LOG_DEBUG("Found enough free memory from %p to %p", last_entry->base_address + last_entry->length, current_entry->base_address);
+                address = (void *)last_entry->base_address + last_entry->length;
+                break;
+            }
+
+            last_entry = current_entry;
+            current_entry = current_entry->next_entry;
+        }
+
+        if (address == NULL)
+        {
+            LOG_ERROR("Unable to find a large enough free memory region.");
+            return NULL;
+        }  
+
+        // Create a new VMM entry.
+        struct vmm_entry_t *new_entry = vmm_alloc_entry();
+        new_entry->base_address = (uintptr_t)address;
+        new_entry->length = length; // Use the length that was actually allocated (rounded up to the next page).
+        new_entry->flags = flags;
+        new_entry->next_entry = current_entry;
+        if (last_entry == NULL)
+        {
+            vmm->used_list = new_entry;
+        }
+        else
+        {
+            last_entry->next_entry = new_entry;
+        }
     }
 
     uint64_t paging_flags = get_paging_flags_from_vmm_flags(flags) | PAGING_FLAG_PRESENT;

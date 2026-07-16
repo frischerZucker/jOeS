@@ -233,6 +233,7 @@ static paging_error_codes_t paging_map_page_without_tlb_invalidation(union page_
     union page_table_entry_t *pdpr = NULL;
     if (pml4[pml4_idx].pml4.pointer_fields.present == 0)
     {
+        // TODO: I should use the VMM if it is initialized.
         pdpr = pmm_alloc() + g_hhdm_offset;
         paging_add_page_to_used_list(pdpr);
         LOG_DEBUG("Allocated pdpr @ %p", pdpr);
